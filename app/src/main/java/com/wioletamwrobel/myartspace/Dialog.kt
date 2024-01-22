@@ -65,12 +65,13 @@ object Dialog {
     @Composable
     fun DialogTextField(
         value: String,
+        labelText: String,
         onValueChange: (String) -> Unit,
         isError: Boolean = false,
         modifier: Modifier = Modifier.padding(dimensionResource(R.dimen.padding_extra_small))
     ) {
         OutlinedTextField(
-            value = "",
+            value = value,
             onValueChange = onValueChange,
             shape = Shapes.small,
             colors = TextFieldDefaults.outlinedTextFieldColors(
@@ -84,7 +85,7 @@ object Dialog {
                     Text(stringResource(R.string.wrong_input))
                 } else {
                     Text(
-                        text = value,
+                        text = labelText,
                         style = MaterialTheme.typography.bodySmall
                     )
                 }

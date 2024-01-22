@@ -24,17 +24,22 @@ import androidx.compose.ui.res.stringResource
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.wioletamwrobel.myartspace.model.Album
 import com.wioletamwrobel.myartspace.model.MyArtSpaceDao
 import com.wioletamwrobel.myartspace.model.MyArtSpaceDatabase
 import com.wioletamwrobel.myartspace.ui.theme.MyArtSpaceTheme
+import kotlin.concurrent.thread
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var viewModel: MyArtSpaceAppViewModel
     private lateinit var uiState: State<MyArtSpaceUiState>
+    private lateinit var albumList: List<Album>
 
-    private lateinit var database: MyArtSpaceDatabase
-    private val myArtSpaceDao: MyArtSpaceDao by lazy {
+    private val database: MyArtSpaceDatabase by lazy {
+        MyArtSpaceDatabase.getDatabase(this)
+    }
+    private val  myArtSpaceDao: MyArtSpaceDao by lazy {
         database.getMyArtSpaceDao()
     }
 
@@ -48,9 +53,11 @@ class MainActivity : ComponentActivity() {
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background)
                 ) {
+                    thread {
+                        albumList = myArtSpaceDao.getAllAlbums()
+                    }
                     CreateViewModel()
                     Navigation()
-                    //ArtCardScreenApp(artList = Datasource().LoadArt())
                 }
             }
         }
@@ -98,7 +105,9 @@ class MainActivity : ComponentActivity() {
             composable(route = "home_screen") {
                 HomeScreen(
                     uiState = uiState,
-                    viewModel = viewModel
+                    viewModel = viewModel,
+                    myArtSpaceDao,
+                    albumList = albumList
                 )
             }
         }
@@ -155,11 +164,13 @@ class MainActivity : ComponentActivity() {
                 style = MaterialTheme.typography.titleMedium
             )
             Dialog.DialogTextField(
-                value = stringResource(R.string.login),
+                value = "",
+                labelText = stringResource(R.string.login),
                 onValueChange = {}
             )
             Dialog.DialogTextField(
-                value = stringResource(R.string.password),
+                value = "",
+                labelText = stringResource(R.string.password),
                 onValueChange = {}
             )
         }
@@ -176,15 +187,18 @@ class MainActivity : ComponentActivity() {
                 style = MaterialTheme.typography.titleMedium
             )
             Dialog.DialogTextField(
-                value = stringResource(R.string.login),
+                value = "",
+                labelText = stringResource(R.string.login),
                 onValueChange = {}
             )
             Dialog.DialogTextField(
-                value = stringResource(R.string.e_mail),
+                value = "",
+                labelText = stringResource(R.string.e_mail),
                 onValueChange = {}
             )
             Dialog.DialogTextField(
-                value = stringResource(R.string.password),
+                value = "",
+                labelText = stringResource(R.string.password),
                 onValueChange = {}
             )
         }

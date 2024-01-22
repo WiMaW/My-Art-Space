@@ -10,11 +10,11 @@ import androidx.room.Relation
 
 @Entity(tableName = "album")
 data class Album (
-    @PrimaryKey(autoGenerate = true) val id: Long,
-    val image: String? = null,
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val title: String = "",
-    val description: String? = null,
-    @ColumnInfo(name = "create_date") val createDate: String? = null,
+    val description: String = "",
+    val image: String = "",
+    @ColumnInfo(name = "create_date") val createDate: String = "",
     @ColumnInfo(name = "art_number") val artNumber: Int = 0,
 )
 
