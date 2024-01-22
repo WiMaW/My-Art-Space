@@ -1,5 +1,6 @@
 package com.wioletamwrobel.myartspace
 
+import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -20,7 +21,6 @@ class MyArtSpaceAppViewModel : ViewModel() {
     var userInputNewAlbumCreationDate by mutableStateOf("")
         private set
     var userInputNewAlbumImage by mutableStateOf("")
-        private set
 
     fun updateUserInputNewAlbumTitle(newAlbumTitle: String){
         userInputNewAlbumTitle = newAlbumTitle
@@ -50,17 +50,19 @@ class MyArtSpaceAppViewModel : ViewModel() {
             it.copy(navigationBarItemClicked = 0)
         }
     }
+
+    fun navigateToPhotoPicker() {
+        _uiState.update {
+            it.copy(isAddAlbumImageClicked = true)
+        }
+    }
 }
 
 data class MyArtSpaceUiState(
     val isLogInButtonClicked: Boolean = false,
     val isSignUpButtonClicked: Boolean = false,
+    val isAddAlbumImageClicked: Boolean = false,
     val isConfirmLogInSignUpButtonClicked: Boolean = false,
     val navigationBarItemClicked: Int = 0,
-
-    var albumTitle:String = "",
-    var albumDescription: String = "",
-    var albumImage: String = "",
-    var albumCreationDate: String = ""
 )
 

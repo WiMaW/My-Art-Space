@@ -1,5 +1,10 @@
 package com.wioletamwrobel.myartspace
 
+import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,6 +25,7 @@ import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.sharp.Create
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -33,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -165,6 +172,22 @@ fun CreateDialog(
     viewModel: MyArtSpaceAppViewModel,
     myArtSpaceDao: MyArtSpaceDao
 ) {
+
+    //var selectedImage: String =
+    val context = LocalContext.current
+
+    val singlePhotoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
+        if (uri != null) {
+            context.contentResolver.takePersistableUriPermission(uri, flag)
+            viewModel.userInputNewAlbumImage = uri.toString()
+            viewModel.updateUserInputNewAlbumImage(viewModel.userInputNewAlbumImage)
+        }
+    }
+
+
     when (navigationBarItemNumber) {
         1 -> Dialog.CreateDialog(
             icon = { Icon(Icons.Filled.AddCircle, contentDescription = null) },
@@ -185,8 +208,11 @@ fun CreateDialog(
                             it
                         )
                     },
-                    albumImage = viewModel.userInputNewAlbumImage,
-                    onUserAlbumImageChanged = { viewModel.updateUserInputNewAlbumImage(it) }
+                    onAddImageButtonClicked = {
+                        singlePhotoPickerLauncher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    }
                 )
             },
             onConfirmButtonClicked = {
@@ -273,8 +299,7 @@ fun AddAlbumDialogText(
     onUserAlbumDescriptionChanged: (String) -> Unit,
     albumCreationDate: String,
     onUserAlbumCreationDateChanged: (String) -> Unit,
-    albumImage: String,
-    onUserAlbumImageChanged: (String) -> Unit
+    onAddImageButtonClicked: () -> Unit
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -295,12 +320,31 @@ fun AddAlbumDialogText(
             labelText = stringResource(R.string.add_album_creation_date),
             onValueChange = onUserAlbumCreationDateChanged
         )
-        Dialog.DialogTextField(
-            value = albumImage,
-            labelText = stringResource(R.string.add_album_image),
-            onValueChange = onUserAlbumImageChanged
-        )
+        Button(onClick = onAddImageButtonClicked, shape = MaterialTheme.shapes.small) {
+            Icon(imageVector = Icons.Filled.Add, contentDescription = "add image")
+            Text(text = "Add Album Image")
+        }
     }
+}
+
+@Composable
+fun photoPicker(): Uri? {
+    var selectedImage: Uri? = null
+    val context = LocalContext.current
+
+    val singlePhotoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri ->
+            val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            if (uri != null) {
+                context.contentResolver.takePersistableUriPermission(uri, flag)
+                selectedImage = uri
+            }
+        })
+    singlePhotoPickerLauncher.launch(
+        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+    )
+    return selectedImage
 }
 
 @Composable
@@ -330,7 +374,7 @@ fun AlbumsLazyColumn(
                             .height(60.dp)
                             .weight(1f)
                             .align(Alignment.CenterVertically)
-                        )
+                    )
                     Column(
                         modifier = Modifier.weight(2f),
                         horizontalAlignment = Alignment.CenterHorizontally,
