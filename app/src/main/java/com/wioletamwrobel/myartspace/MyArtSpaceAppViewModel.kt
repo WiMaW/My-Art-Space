@@ -33,6 +33,9 @@ class MyArtSpaceAppViewModel : ViewModel() {
     }
     fun updateUserInputNewAlbumImage(newAlbumImage: String) {
         userInputNewAlbumImage = newAlbumImage
+        _uiState.update {
+            it.copy(isAlbumPhotoAdded = true)
+        }
     }
 
     fun updateAlbumList() {
@@ -62,7 +65,7 @@ data class MyArtSpaceUiState(
     val isLogInButtonClicked: Boolean = false,
     val isSignUpButtonClicked: Boolean = false,
     val isAddAlbumImageClicked: Boolean = false,
-    val isConfirmLogInSignUpButtonClicked: Boolean = false,
+    val isAlbumPhotoAdded: Boolean = false,
     val navigationBarItemClicked: Int = 0,
 )
 

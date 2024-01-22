@@ -1,7 +1,6 @@
 package com.wioletamwrobel.myartspace
 
 import android.content.Intent
-import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -12,10 +11,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -25,6 +24,7 @@ import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.sharp.Create
+import androidx.compose.material.icons.sharp.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -39,11 +39,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.wioletamwrobel.myartspace.model.Album
 import com.wioletamwrobel.myartspace.model.MyArtSpaceDao
@@ -89,16 +92,16 @@ fun HomeScreen(
     CreateDialog(
         navigationBarItemNumber = uiState.value.navigationBarItemClicked,
         viewModel = viewModel,
-        myArtSpaceDao = myArtSpaceDao
+        myArtSpaceDao = myArtSpaceDao,
+        uiState = uiState
     )
 }
 
 @Composable
 fun BottomNavigationBar(
     viewModel: MyArtSpaceAppViewModel,
-    modifier: Modifier = Modifier
 ) {
-    NavigationBar(modifier = modifier.fillMaxWidth()) {
+    NavigationBar() {
         NavigationBarItem(
             selected = true,
             onClick = { viewModel.navigateToBarItemDialog(1) },
@@ -170,12 +173,10 @@ fun BottomNavigationBar(
 fun CreateDialog(
     navigationBarItemNumber: Int,
     viewModel: MyArtSpaceAppViewModel,
+    uiState: State<MyArtSpaceUiState>,
     myArtSpaceDao: MyArtSpaceDao
 ) {
-
-    //var selectedImage: String =
     val context = LocalContext.current
-
     val singlePhotoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
@@ -212,7 +213,8 @@ fun CreateDialog(
                         singlePhotoPickerLauncher.launch(
                             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                         )
-                    }
+                    },
+                    uiState = uiState
                 )
             },
             onConfirmButtonClicked = {
@@ -299,7 +301,8 @@ fun AddAlbumDialogText(
     onUserAlbumDescriptionChanged: (String) -> Unit,
     albumCreationDate: String,
     onUserAlbumCreationDateChanged: (String) -> Unit,
-    onAddImageButtonClicked: () -> Unit
+    onAddImageButtonClicked: () -> Unit,
+    uiState: State<MyArtSpaceUiState>
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -320,31 +323,22 @@ fun AddAlbumDialogText(
             labelText = stringResource(R.string.add_album_creation_date),
             onValueChange = onUserAlbumCreationDateChanged
         )
-        Button(onClick = onAddImageButtonClicked, shape = MaterialTheme.shapes.small) {
-            Icon(imageVector = Icons.Filled.Add, contentDescription = "add image")
-            Text(text = "Add Album Image")
-        }
-    }
-}
+        Row {
 
-@Composable
-fun photoPicker(): Uri? {
-    var selectedImage: Uri? = null
-    val context = LocalContext.current
-
-    val singlePhotoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri ->
-            val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            if (uri != null) {
-                context.contentResolver.takePersistableUriPermission(uri, flag)
-                selectedImage = uri
+            Button(
+                onClick = onAddImageButtonClicked,
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.padding(dimensionResource(id = R.dimen.padding_small))) {
+                Icon(if (!uiState.value.isAlbumPhotoAdded) painterResource(R.drawable.add_photo) else
+                    painterResource(R.drawable.icon_image),
+                    contentDescription = "add photo"
+                )
+                Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen.padding_extra_small)))
+                Text(text = "Add Album Image")
             }
-        })
-    singlePhotoPickerLauncher.launch(
-        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-    )
-    return selectedImage
+        }
+
+    }
 }
 
 @Composable
@@ -359,6 +353,7 @@ fun AlbumsLazyColumn(
             Card(
                 modifier = Modifier
                     .padding(dimensionResource(R.dimen.padding_small))
+                    .height(120.dp)
                     .clickable { },
                 elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(R.dimen.padding_extra_small))
             ) {
@@ -370,8 +365,9 @@ fun AlbumsLazyColumn(
                     AsyncImage(
                         model = album.image,
                         contentDescription = null,
+                        contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .height(60.dp)
+                            //.height(60.dp)
                             .weight(1f)
                             .align(Alignment.CenterVertically)
                     )
@@ -391,27 +387,24 @@ fun AlbumsLazyColumn(
                                 .padding(dimensionResource(R.dimen.padding_extra_small)),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Row() {
-                                Text(
-                                    text = album.description,
-                                    style = MaterialTheme.typography.bodySmall,
-                                )
-                                Text(
-                                    text = " | ",
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                                Text(
-                                    text = album.createDate,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
                             Text(
-                                text = album.artNumber.toString(),
+                                text = album.description,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                            Text(
+                                text = album.createDate,
                                 style = MaterialTheme.typography.bodySmall
                             )
+//                            Text(
+//                                text = album.artNumber.toString(),
+//                                style = MaterialTheme.typography.bodySmall
+//                            )
                         }
                     }
-                    EditButton()
+                    Column {
+                        EditButton()
+                        DeleteButton()
+                    }
                 }
             }
         }
@@ -423,6 +416,17 @@ fun EditButton() {
     IconButton(onClick = { }) {
         Icon(
             imageVector = Icons.Sharp.Create,
+            contentDescription = "Edit Album",
+            modifier = Modifier.size(18.dp)
+        )
+    }
+}
+
+@Composable
+fun DeleteButton() {
+    IconButton(onClick = { }) {
+        Icon(
+            imageVector = Icons.Sharp.Delete,
             contentDescription = "Edit Album",
             modifier = Modifier.size(18.dp)
         )

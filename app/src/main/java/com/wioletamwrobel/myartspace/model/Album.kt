@@ -15,7 +15,7 @@ data class Album (
     val description: String = "",
     val image: String = "",
     @ColumnInfo(name = "create_date") val createDate: String = "",
-    @ColumnInfo(name = "art_number") val artNumber: Int = 0,
+    //@ColumnInfo(name = "art_number") val artNumber: Int = 0,
 )
 
 data class AlbumWithArts (

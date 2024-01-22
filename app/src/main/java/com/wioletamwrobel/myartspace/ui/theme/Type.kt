@@ -22,14 +22,14 @@ val Typography = Typography(
     ),
     bodyMedium = TextStyle(
         fontFamily = JostLight,
-        fontSize = 18.sp
+        fontSize = 19.sp
     ),
     bodySmall = TextStyle(
         fontFamily = JostLight,
-        fontSize = 15.sp
+        fontSize = 16.sp
     ),
     labelSmall = TextStyle(
         fontFamily = JostLight,
-        fontSize = 12.sp
+        fontSize = 13.sp
     ),
 )
