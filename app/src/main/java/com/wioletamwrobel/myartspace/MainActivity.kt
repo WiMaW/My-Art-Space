@@ -1,5 +1,6 @@
 package com.wioletamwrobel.myartspace
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -39,7 +40,7 @@ class MainActivity : ComponentActivity() {
     private val database: MyArtSpaceDatabase by lazy {
         MyArtSpaceDatabase.getDatabase(this)
     }
-    private val  myArtSpaceDao: MyArtSpaceDao by lazy {
+    private val myArtSpaceDao: MyArtSpaceDao by lazy {
         database.getMyArtSpaceDao()
     }
 
@@ -69,20 +70,21 @@ class MainActivity : ComponentActivity() {
         uiState = viewModel.uiState.collectAsState()
     }
 
+    @SuppressLint("ComposableDestinationInComposeScope")
     @Composable
     fun Navigation() {
         val navController = rememberNavController()
-        
+
         NavHost(navController = navController, startDestination = "login_sign_up_screen") {
             composable(route = "login_sign_up_screen") {
                 LogInSignUpScreen(
-                    onNavigationToSignUp = {navController.navigate("signup_dialog")},
-                    onNavigationToLogIn = {navController.navigate("login_dialog")}
+                    onNavigationToSignUp = { navController.navigate("signup_dialog") },
+                    onNavigationToLogIn = { navController.navigate("login_dialog") }
                 )
             }
             composable(route = "signup_dialog") {
                 Dialog.CreateDialog(
-                    icon = { Icon(Icons.Filled.AccountCircle, contentDescription = null)},
+                    icon = { Icon(Icons.Filled.AccountCircle, contentDescription = null) },
                     title = stringResource(R.string.sign_up),
                     dialogText = { SignUpDialogText() },
                     onConfirmButtonClicked = {
@@ -93,7 +95,7 @@ class MainActivity : ComponentActivity() {
             }
             composable(route = "login_dialog") {
                 Dialog.CreateDialog(
-                    icon = { Icon(Icons.Filled.AccountCircle, contentDescription = null)},
+                    icon = { Icon(Icons.Filled.AccountCircle, contentDescription = null) },
                     title = stringResource(R.string.log_in),
                     dialogText = { LogInDialogText() },
                     onConfirmButtonClicked = {
@@ -107,7 +109,14 @@ class MainActivity : ComponentActivity() {
                     uiState = uiState,
                     viewModel = viewModel,
                     myArtSpaceDao,
-                    albumList = albumList
+                    albumList = albumList,
+                    navController = navController
+                )
+            }
+            composable(route = "art_card_screen") {
+                ArtCardScreenApp(
+                    albumId = 0,
+                    viewModel = viewModel
                 )
             }
         }

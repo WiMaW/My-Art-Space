@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -14,6 +15,13 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.twotone.List
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -37,67 +45,105 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.wioletamwrobel.myartspace.model.Art
-import com.wioletamwrobel.myartspace.ui.theme.MyArtSpaceTheme
 import com.wioletamwrobel.myartspace.ui.theme.Shapes
 
-//@OptIn(ExperimentalMaterial3Api::class)
-//@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-//@Composable
-//fun ArtCardScreenApp(
-//    modifier: Modifier = Modifier,
-//    artList: List<Art>,
-//) {
-//    var click by remember {
-//        mutableStateOf(0)
-//    }
-//    var clickLimit: Int = artList.size - 1
-//
-//    Scaffold (modifier = modifier) {
-//        Column(
-//            modifier = modifier
-//                .padding(dimensionResource(R.dimen.padding_medium))
-//                .fillMaxWidth()
-//                .verticalScroll(rememberScrollState()),
-//                horizontalAlignment = Alignment.CenterHorizontally,
-//                verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small)),
-//            ){
-//                AppNameAndIcon()
-//                ActionButton(
-//                    onClick = { if (click > 0) click-- else click = clickLimit },
-//                    text = "PREV",
-//                    modifier = modifier
-//                        .padding(
-//                            top = dimensionResource(R.dimen.padding_medium),
-//                            bottom = dimensionResource(R.dimen.padding_medium)
-//                        )
-//                )
-//                ArtAndDescriptionCard(click = click, artList = Datasource().LoadArt())
-//                Row(
-//                    modifier = modifier,
-//                ) {
-//                    ChangeViewButton(onClick = {})
-//                }
-//                ActionButton(
-//                    onClick = { if (click < clickLimit) click++ else click = 0 },
-//                    text = "NEXT",
-//                    modifier.padding(
-//                        dimensionResource(R.dimen.padding_extra_small)
-//                    )
-//                )
-//            BottomNavigationBar() //change first to home
-//            }
-//    }
-//}
-//
+@OptIn(ExperimentalMaterial3Api::class)
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+@Composable
+fun ArtCardScreenApp(
+    albumId: Long,
+    viewModel: MyArtSpaceAppViewModel,
+    //artList: List<Art>,
+) {
+    var click by remember {
+        mutableStateOf(0)
+    }
+
+    var artList: List<Art> by remember {
+        mutableStateOf(emptyList())
+    }
+
+    val artListSize: Int by lazy { artList.size }
+    val clickLimit: Int by lazy { artListSize - 1 }
+
+
+    Scaffold() {
+        Column(
+            modifier = Modifier
+                .padding(vertical = dimensionResource(R.dimen.padding_medium))
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            AppNameAndIcon()
+            if (artListSize > 0) {
+                ActionButton(
+                    onClick = { if (click > 0) click-- else click = clickLimit },
+                    text = "PREV",
+                    modifier = Modifier
+                        .padding(
+                            top = dimensionResource(R.dimen.padding_medium),
+                            bottom = dimensionResource(R.dimen.padding_medium)
+                        )
+                )
+                ArtAndDescriptionCard(click = click, artList = artList)
+                Row(
+                    modifier = Modifier,
+                ) {
+                    ChangeViewButton(onClick = {})
+                }
+                ActionButton(
+                    onClick = { if (click < clickLimit) click++ else click = 0 },
+                    text = "NEXT",
+                    Modifier.padding(
+                        dimensionResource(R.dimen.padding_extra_small)
+                    )
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                BottomNavigationBar(
+                    viewModel = viewModel,
+                    textItemOne = stringResource(id = R.string.edit_art),
+                    iconItemOne = Icons.Filled.Edit,
+                    contentDescriptionItemOne = stringResource(id = R.string.edit_art),
+                    textItemTwo = stringResource(R.string.delete_art),
+                    iconItemTwo = Icons.Filled.Delete,
+                    contentDescriptionItemTwo = stringResource(R.string.delete_art),
+                    textItemThree = stringResource(R.string.share_art),
+                    iconItemThree = Icons.Filled.Share,
+                    contentDescriptionItemThree = stringResource(R.string.share_art),
+                    textItemFour = stringResource(R.string.add_art),
+                    iconItemFour = Icons.Filled.Add,
+                    contentDescriptionItemFour = stringResource(R.string.add_art),
+                )
+            }
+            else {
+                Row (modifier = Modifier.padding(top = dimensionResource(R.dimen.padding_medium))) {
+                    Button(
+                        onClick = {  },
+                        shape = MaterialTheme.shapes.small,
+                        modifier = Modifier.padding(dimensionResource(id = R.dimen.padding_small))) {
+                        Icon(painterResource(R.drawable.add_photo),
+                            contentDescription = "add photo"
+                        )
+                        Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen.padding_extra_small)))
+                        Text(text = "Add your first piece of art")
+                    }
+                }
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppNameAndIcon (modifier: Modifier = Modifier) {
+fun AppNameAndIcon(modifier: Modifier = Modifier) {
     CenterAlignedTopAppBar(
         title = {
-            Row (modifier = modifier){
+            Row(modifier = modifier) {
                 Image(
                     painter = painterResource(R.drawable.app_icon2),
                     contentDescription = null,
@@ -123,7 +169,7 @@ fun ActionButton(
     onClick: () -> Unit,
     text: String,
     modifier: Modifier,
-){
+) {
     Button(
         onClick = onClick,
         modifier = modifier.widthIn(min = 250.dp),
@@ -135,77 +181,79 @@ fun ActionButton(
         )
     }
 }
-//
-//@Composable
-//fun ArtAndDescriptionCard (
-//    modifier: Modifier = Modifier,
-//    artList: List<Art>,
-//    click: Int
-//) {
-//    Card (
-//        modifier = modifier,
-//        elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(R.dimen.padding_extra_small))) {
-//        Column (
-//            modifier = modifier,
-//            horizontalAlignment = Alignment.CenterHorizontally,
-//            verticalArrangement = Arrangement.Center,
-//        ){
-//            Row {
-//                Spacer(modifier = modifier.weight(1f))
-//                EditButton()
-//            }
-//            Image(
-//                painter = painterResource(artList[click].image),
-//                contentDescription = stringResource(artList[click].contentDescription),
-//                modifier = Modifier
-//                    .padding(dimensionResource(R.dimen.padding_medium))
-//                    .fillMaxWidth()
-//                    .height(200.dp),
-//                contentScale = ContentScale.Fit
-//            )
-//            Column (
-//                modifier = modifier,
-//                horizontalAlignment = Alignment.CenterHorizontally,
-//                verticalArrangement = Arrangement.Top){
-//                Text(
-//                    modifier = Modifier.padding(bottom = dimensionResource(R.dimen.padding_medium)),
-//                    text = stringResource(artList[click].title),
-//                    style = MaterialTheme.typography.titleLarge
-//                )
-//                Text(
-//                    text = stringResource(artList[click].method),
-//                    style = MaterialTheme.typography.bodyMedium
-//                )
-//                Text(
-//                    modifier = Modifier
-//                        .padding(
-//                            bottom = dimensionResource(R.dimen.padding_medium),
-//                            top = dimensionResource(R.dimen.padding_extra_small)
-//                        ),
-//                    text = stringResource(artList[click].date),
-//                    style = MaterialTheme.typography.bodySmall
-//                )
-//            }
-//        }
-//    }
-//}
-//
-//@Composable
-//fun ChangeViewButton(
-//    onClick:() -> Unit,
-//    modifier: Modifier = Modifier
-//){
-//    IconButton(
-//        onClick = onClick
-//    ){
-//        Icon(
-//            imageVector = Icons.TwoTone.List,
-//            contentDescription = stringResource(id = R.string.change_view_button),
-//            tint = MaterialTheme.colorScheme.secondary
-//        )
-//    }
-//}
-//
+
+@Composable
+fun ArtAndDescriptionCard(
+    modifier: Modifier = Modifier,
+    artList: List<Art>,
+    click: Int
+) {
+    Card(
+        modifier = modifier,
+        elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(R.dimen.padding_extra_small))
+    ) {
+        Column(
+            modifier = modifier,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Row {
+                Spacer(modifier = modifier.weight(1f))
+                EditButton()
+            }
+            AsyncImage(
+                model = artList[click].image,
+                contentDescription = null,
+                modifier = Modifier
+                    .padding(dimensionResource(R.dimen.padding_medium))
+                    .fillMaxWidth()
+                    .height(200.dp),
+                contentScale = ContentScale.Fit
+            )
+            Column(
+                modifier = modifier,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Top
+            ) {
+                Text(
+                    modifier = Modifier.padding(bottom = dimensionResource(R.dimen.padding_medium)),
+                    text = artList[click].title,
+                    style = MaterialTheme.typography.titleLarge
+                )
+                Text(
+                    text = artList[click].method,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    modifier = Modifier
+                        .padding(
+                            bottom = dimensionResource(R.dimen.padding_medium),
+                            top = dimensionResource(R.dimen.padding_extra_small)
+                        ),
+                    text = artList[click].date,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ChangeViewButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    IconButton(
+        onClick = onClick
+    ) {
+        Icon(
+            imageVector = Icons.TwoTone.List,
+            contentDescription = stringResource(id = R.string.change_view_button),
+            tint = MaterialTheme.colorScheme.secondary
+        )
+    }
+}
+
 //@Preview(showBackground = true)
 //@Composable
 //fun MyArtSpacePreview() {

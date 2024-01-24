@@ -26,8 +26,8 @@ interface MyArtSpaceDao {
     @Insert
     fun createArt(art: Art)
 
-    @Query("SELECT * FROM art")
-    fun getAllArts(): List<Art>
+    @Query("SELECT * FROM art WHERE albumId = :query")
+    fun getAllArts(query: Long): List<Art>
 
     @Update
     fun updateArt(art: Art)

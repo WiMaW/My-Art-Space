@@ -13,7 +13,7 @@ data class Art (
     val image: String = "",
     @ColumnInfo(name = "content_description") val contentDescription: String? = null,
     val title: String = "",
-    val method: String? = null,
-    val date: String? = null,
+    val method: String = "",
+    val date: String = "",
     val albumId: Long
 )
