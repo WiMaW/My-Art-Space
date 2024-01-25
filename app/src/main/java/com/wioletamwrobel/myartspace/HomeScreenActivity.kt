@@ -23,8 +23,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.sharp.Create
 import androidx.compose.material.icons.sharp.Delete
+import androidx.compose.material.icons.sharp.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -47,10 +47,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.wioletamwrobel.myartspace.model.Album
+import com.wioletamwrobel.myartspace.model.MyArtDao
 import com.wioletamwrobel.myartspace.model.MyArtSpaceDao
 import kotlin.concurrent.thread
 
@@ -77,6 +77,7 @@ fun HomeScreen(
     uiState: State<MyArtSpaceUiState>,
     viewModel: MyArtSpaceAppViewModel,
     myArtSpaceDao: MyArtSpaceDao,
+    myArtDao: MyArtDao,
     albumList: List<Album>,
     navController: NavController
 ) {
@@ -90,7 +91,9 @@ fun HomeScreen(
         AppNameAndIcon()
         AlbumsLazyColumn(
             albumList = albumList,
-            navController = navController
+            navController = navController,
+            viewModel = viewModel,
+            myArtDao = myArtDao
         )
         Spacer(modifier = Modifier.weight(1f))
         BottomNavigationBar(
@@ -102,13 +105,14 @@ fun HomeScreen(
             iconItemTwo = Icons.Filled.Search,
             contentDescriptionItemTwo = stringResource(R.string.search),
             textItemThree = stringResource(R.string.account),
-            iconItemThree  = Icons.Filled.AccountCircle,
-            contentDescriptionItemThree  = stringResource(R.string.account),
+            iconItemThree = Icons.Filled.AccountCircle,
+            contentDescriptionItemThree = stringResource(R.string.account),
             textItemFour = stringResource(R.string.settings),
             iconItemFour = Icons.Filled.Settings,
-            contentDescriptionItemFour = stringResource(R.string.settings),)
+            contentDescriptionItemFour = stringResource(R.string.settings),
+        )
     }
-    CreateDialog(
+    CreateDialogsForNavigationBarItems(
         navigationBarItemNumber = uiState.value.navigationBarItemClicked,
         viewModel = viewModel,
         myArtSpaceDao = myArtSpaceDao,
@@ -132,7 +136,7 @@ fun BottomNavigationBar(
     iconItemFour: ImageVector,
     contentDescriptionItemFour: String,
 
-) {
+    ) {
     NavigationBar() {
         NavigationBarItem(
             selected = true,
@@ -202,7 +206,7 @@ fun BottomNavigationBar(
 }
 
 @Composable
-fun CreateDialog(
+fun CreateDialogsForNavigationBarItems(
     navigationBarItemNumber: Int,
     viewModel: MyArtSpaceAppViewModel,
     uiState: State<MyArtSpaceUiState>,
@@ -352,7 +356,7 @@ fun AddAlbumDialogText(
         )
         Dialog.DialogTextField(
             value = albumCreationDate,
-            labelText = stringResource(R.string.add_album_creation_date),
+            labelText = stringResource(R.string.add_album_date),
             onValueChange = onUserAlbumCreationDateChanged
         )
         Row {
@@ -360,9 +364,11 @@ fun AddAlbumDialogText(
             Button(
                 onClick = onAddImageButtonClicked,
                 shape = MaterialTheme.shapes.small,
-                modifier = Modifier.padding(dimensionResource(id = R.dimen.padding_small))) {
-                Icon(if (!uiState.value.isAlbumPhotoAdded) painterResource(R.drawable.add_photo) else
-                    painterResource(R.drawable.icon_image),
+                modifier = Modifier.padding(dimensionResource(id = R.dimen.padding_small))
+            ) {
+                Icon(
+                    if (!uiState.value.isAlbumPhotoAdded) painterResource(R.drawable.add_photo) else
+                        painterResource(R.drawable.icon_image),
                     contentDescription = "add photo"
                 )
                 Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen.padding_extra_small)))
@@ -377,6 +383,8 @@ fun AddAlbumDialogText(
 fun AlbumsLazyColumn(
     albumList: List<Album>,
     navController: NavController,
+    viewModel: MyArtSpaceAppViewModel,
+    myArtDao: MyArtDao
 ) {
 
     val color = MaterialTheme.colorScheme.outlineVariant
@@ -387,7 +395,14 @@ fun AlbumsLazyColumn(
                 modifier = Modifier
                     .padding(dimensionResource(R.dimen.padding_small))
                     .height(120.dp)
-                    .clickable { navController.navigate("art_card_screen") },
+                    .clickable {
+                        navController.navigate("art_card_screen")
+                        viewModel.updateAlbumId(album.id)
+                        thread {
+                            viewModel.updateArtAmountInCurrentAlbum(myArtDao.getAllArtsFromCurrentAlbum(viewModel.currentAlbumId).size)
+                            viewModel.updateCurrentAlbumArtListToDisplay(myArtDao.getAllArtsFromCurrentAlbum(viewModel.currentAlbumId))
+                        }
+                    },
                 elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(R.dimen.padding_extra_small))
             ) {
                 Row(
@@ -448,7 +463,7 @@ fun AlbumsLazyColumn(
 fun EditButton() {
     IconButton(onClick = { }) {
         Icon(
-            imageVector = Icons.Sharp.Create,
+            imageVector = Icons.Sharp.Menu,
             contentDescription = "Edit Album",
             modifier = Modifier.size(18.dp)
         )

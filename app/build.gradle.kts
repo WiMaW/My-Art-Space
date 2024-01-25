@@ -73,6 +73,9 @@ dependencies {
     ksp("androidx.room:room-compiler:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
 
+    implementation ("io.insert-koin:koin-android:3.5.0")
+    implementation ("com.google.accompanist:accompanist-permissions:0.32.0")
+
     implementation("io.coil-kt:coil-compose:2.5.0")
 
     testImplementation("junit:junit:4.13.2")

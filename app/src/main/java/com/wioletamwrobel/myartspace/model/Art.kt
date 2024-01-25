@@ -11,7 +11,7 @@ import androidx.room.PrimaryKey
 data class Art (
     @ColumnInfo(name = "art_id")@PrimaryKey(autoGenerate = true) val artId: Long = 0,
     val image: String = "",
-    @ColumnInfo(name = "content_description") val contentDescription: String? = null,
+    //@ColumnInfo(name = "content_description") val contentDescription: String? = null,
     val title: String = "",
     val method: String = "",
     val date: String = "",

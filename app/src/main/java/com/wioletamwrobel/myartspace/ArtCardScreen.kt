@@ -1,6 +1,10 @@
 package com.wioletamwrobel.myartspace
 
 import android.annotation.SuppressLint
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,18 +14,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.sharp.Menu
 import androidx.compose.material.icons.twotone.List
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -34,40 +37,47 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.wioletamwrobel.myartspace.model.Art
+import com.wioletamwrobel.myartspace.model.MyArtDao
 import com.wioletamwrobel.myartspace.ui.theme.Shapes
+import kotlin.concurrent.thread
 
 @OptIn(ExperimentalMaterial3Api::class)
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState")
 @Composable
 fun ArtCardScreenApp(
     albumId: Long,
     viewModel: MyArtSpaceAppViewModel,
-    //artList: List<Art>,
+    uiState: State<MyArtSpaceUiState>,
+    navController: NavController,
+    myArtDao: MyArtDao,
+    artListSizeFromCurrentAlbum: Int?,
 ) {
     var click by remember {
         mutableStateOf(0)
     }
 
-    var artList: List<Art> by remember {
-        mutableStateOf(emptyList())
-    }
 
-    val artListSize: Int by lazy { artList.size }
-    val clickLimit: Int by lazy { artListSize - 1 }
+    val clickLimit: Int = artListSizeFromCurrentAlbum?.minus(1) ?: 0
+    //viewModel.updateCurrentAlbumArtListToDisplay()
+    thread { viewModel.updateCurrentAlbumArtListToDisplay(myArtDao.getAllArtsFromCurrentAlbum(viewModel.currentAlbumId)) }
 
 
     Scaffold() {
@@ -79,62 +89,197 @@ fun ArtCardScreenApp(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            AppNameAndIcon()
-            if (artListSize > 0) {
-                ActionButton(
-                    onClick = { if (click > 0) click-- else click = clickLimit },
-                    text = "PREV",
-                    modifier = Modifier
-                        .padding(
-                            top = dimensionResource(R.dimen.padding_medium),
-                            bottom = dimensionResource(R.dimen.padding_medium)
-                        )
-                )
-                ArtAndDescriptionCard(click = click, artList = artList)
-                Row(
-                    modifier = Modifier,
-                ) {
-                    ChangeViewButton(onClick = {})
-                }
-                ActionButton(
-                    onClick = { if (click < clickLimit) click++ else click = 0 },
-                    text = "NEXT",
-                    Modifier.padding(
-                        dimensionResource(R.dimen.padding_extra_small)
-                    )
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                BottomNavigationBar(
-                    viewModel = viewModel,
-                    textItemOne = stringResource(id = R.string.edit_art),
-                    iconItemOne = Icons.Filled.Edit,
-                    contentDescriptionItemOne = stringResource(id = R.string.edit_art),
-                    textItemTwo = stringResource(R.string.delete_art),
-                    iconItemTwo = Icons.Filled.Delete,
-                    contentDescriptionItemTwo = stringResource(R.string.delete_art),
-                    textItemThree = stringResource(R.string.share_art),
-                    iconItemThree = Icons.Filled.Share,
-                    contentDescriptionItemThree = stringResource(R.string.share_art),
-                    textItemFour = stringResource(R.string.add_art),
-                    iconItemFour = Icons.Filled.Add,
-                    contentDescriptionItemFour = stringResource(R.string.add_art),
-                )
-            }
-            else {
-                Row (modifier = Modifier.padding(top = dimensionResource(R.dimen.padding_medium))) {
-                    Button(
-                        onClick = {  },
-                        shape = MaterialTheme.shapes.small,
-                        modifier = Modifier.padding(dimensionResource(id = R.dimen.padding_small))) {
-                        Icon(painterResource(R.drawable.add_photo),
-                            contentDescription = "add photo"
-                        )
-                        Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen.padding_extra_small)))
-                        Text(text = "Add your first piece of art")
+            //AppNameAndIcon()
+            if (artListSizeFromCurrentAlbum == null || artListSizeFromCurrentAlbum == 0) {
+                    Row(modifier = Modifier.padding(top = dimensionResource(R.dimen.padding_medium))) {
+                        Button(
+                            onClick = { viewModel.navigateToAddArtAlertDialog() },
+                            shape = MaterialTheme.shapes.small,
+                            modifier = Modifier.padding(dimensionResource(id = R.dimen.padding_small))
+                        ) {
+                            Icon(
+                                painterResource(R.drawable.add_photo),
+                                contentDescription = "add photo"
+                            )
+                            Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen.padding_extra_small)))
+                            Text(text = stringResource(R.string.add_art_title))
+                        }
                     }
+                    if (uiState.value.isAddArtButtonClicked) {
+                        AddArtAlertDialog(
+                            uiState = uiState,
+                            onDissmisedButtonClicked = {
+                                navController.navigate("art_card_screen")
+                                viewModel.navigateToArtCardScreenFromAlertDialog()
+                            },
+                            onConfirmButtonClicked = {
+                                val art = Art(
+                                    title = viewModel.userInputNewArtTitle,
+                                    method = viewModel.userInputNewArtMethod,
+                                    date = viewModel.userInputNewArtDate,
+                                    image = viewModel.userInputNewArtImage,
+                                    albumId = albumId,
+                                )
+                                thread {
+                                    myArtDao.createArt(art)
+                                    //artList = myArtDao.getAllArtsFromCurrentAlbum(albumId)
+                                    viewModel.updateCurrentAlbumArtListToDisplay(myArtDao.getAllArtsFromCurrentAlbum(viewModel.currentAlbumId))
+                                }
+                                viewModel.navigateToArtCardScreenFromAlertDialog()
+                                //viewModel.updateCurrentAlbumArtListToDisplay()
+                                viewModel.updateArtAmountInCurrentAlbum(viewModel.artListInCurrentAlbum.size)
+                            },
+                            viewModel = viewModel
+                        )
+                    }
+                }
+                else {
+                       //viewModel.updateCurrentAlbumArtListToDisplay()
+                    thread { viewModel.updateCurrentAlbumArtListToDisplay(myArtDao.getAllArtsFromCurrentAlbum(viewModel.currentAlbumId)) }
+
+                    ActionButton(
+                        onClick = { if (click > 0) click-- else click = clickLimit },
+                        text = "PREV",
+                        modifier = Modifier
+                            .padding(
+                                top = dimensionResource(R.dimen.padding_medium),
+                                bottom = dimensionResource(R.dimen.padding_medium)
+                            )
+                    )
+                    if (viewModel.artListInCurrentAlbum.isNotEmpty()) {
+                        ArtAndDescriptionCard(
+                            click = click,
+                            artList = viewModel.artListInCurrentAlbum.toMutableStateList()
+                        )
+                        Row(
+                            modifier = Modifier,
+                        ) {
+                            ChangeViewButton(onClick = {})
+                        }
+                    }
+                    ActionButton(
+                        onClick = { if (click < clickLimit) click++ else click = 0 },
+                        text = "NEXT",
+                        Modifier.padding(
+                            dimensionResource(R.dimen.padding_extra_small)
+                        )
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    BottomNavigationBar(
+                        viewModel = viewModel,
+                        textItemOne = stringResource(id = R.string.edit_art),
+                        iconItemOne = Icons.Filled.Edit,
+                        contentDescriptionItemOne = stringResource(id = R.string.edit_art),
+                        textItemTwo = stringResource(R.string.delete_art),
+                        iconItemTwo = Icons.Filled.Delete,
+                        contentDescriptionItemTwo = stringResource(R.string.delete_art),
+                        textItemThree = stringResource(R.string.share_art),
+                        iconItemThree = Icons.Filled.Share,
+                        contentDescriptionItemThree = stringResource(R.string.share_art),
+                        textItemFour = stringResource(R.string.add_art),
+                        iconItemFour = Icons.Filled.Add,
+                        contentDescriptionItemFour = stringResource(R.string.add_art),
+                    )
                 }
             }
         }
+    }
+
+@Composable
+fun AddArtAlertDialog(
+    uiState: State<MyArtSpaceUiState>,
+    onDissmisedButtonClicked: () -> Unit,
+    onConfirmButtonClicked: () -> Unit,
+    viewModel: MyArtSpaceAppViewModel
+) {
+    val context = LocalContext.current
+    val singlePhotoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
+        if (uri != null) {
+            context.contentResolver.takePersistableUriPermission(uri, flag)
+            viewModel.userInputNewArtImage = uri.toString()
+            viewModel.updateUserInputNewArtImage(viewModel.userInputNewArtImage)
+        }
+    }
+
+    Dialog.CreateDialog(
+        icon = {
+            Icon(
+                painterResource(R.drawable.add_photo),
+                contentDescription = "add photo"
+            )
+        },
+        title = stringResource(R.string.add_art_title),
+        dialogText = {
+            AddArtDialogText(
+                artTitle = viewModel.userInputNewArtTitle,
+                onUserArtTitleChanged = { viewModel.updateUserInputNewArtTitle(it) },
+                artMethod = viewModel.userInputNewArtMethod,
+                onUserArtMethodChanged = { viewModel.updateUserInputNewArtMethod(it) },
+                artDate = viewModel.userInputNewArtDate,
+                onUserArtDateChanged = { viewModel.updateUserInputNewArtDate(it) },
+                onAddImageButtonClicked = {
+                    singlePhotoPickerLauncher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
+                },
+                uiState = uiState
+            )
+        },
+        onDismissButtonClicked = onDissmisedButtonClicked,
+        onConfirmButtonClicked = onConfirmButtonClicked
+    )
+}
+
+@Composable
+fun AddArtDialogText(
+    artTitle: String,
+    onUserArtTitleChanged: (String) -> Unit,
+    artMethod: String,
+    onUserArtMethodChanged: (String) -> Unit,
+    artDate: String,
+    onUserArtDateChanged: (String) -> Unit,
+    onAddImageButtonClicked: () -> Unit,
+    uiState: State<MyArtSpaceUiState>
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Dialog.DialogTextField(
+            value = artTitle,
+            labelText = stringResource(R.string.add_album_title),
+            onValueChange = onUserArtTitleChanged
+        )
+        Dialog.DialogTextField(
+            value = artMethod,
+            labelText = stringResource(R.string.add_art_method),
+            onValueChange = onUserArtMethodChanged
+        )
+        Dialog.DialogTextField(
+            value = artDate,
+            labelText = stringResource(R.string.add_album_date),
+            onValueChange = onUserArtDateChanged
+        )
+        Row {
+
+            Button(
+                onClick = onAddImageButtonClicked,
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.padding(dimensionResource(id = R.dimen.padding_small))
+            ) {
+                Icon(
+                    if (!uiState.value.isArtPhotoAdded) painterResource(R.drawable.add_photo) else
+                        painterResource(R.drawable.icon_image),
+                    contentDescription = "add photo"
+                )
+                Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen.padding_extra_small)))
+                Text(text = if (!uiState.value.isArtPhotoAdded) "Add Art Image" else "Image added")
+            }
+        }
+
     }
 }
 
@@ -185,30 +330,31 @@ fun ActionButton(
 @Composable
 fun ArtAndDescriptionCard(
     modifier: Modifier = Modifier,
-    artList: List<Art>,
+    artList: MutableList<Art>,
     click: Int
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier
+            .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
         elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(R.dimen.padding_extra_small))
     ) {
         Column(
-            modifier = modifier,
+            modifier = modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
             Row {
                 Spacer(modifier = modifier.weight(1f))
-                EditButton()
+                MenuButton()
             }
             AsyncImage(
                 model = artList[click].image,
                 contentDescription = null,
                 modifier = Modifier
-                    .padding(dimensionResource(R.dimen.padding_medium))
-                    .fillMaxWidth()
-                    .height(200.dp),
-                contentScale = ContentScale.Fit
+                    .padding(dimensionResource(R.dimen.padding_small))
+                    .fillMaxWidth(),
+                    //.height(220.dp),
+                contentScale = ContentScale.Crop
             )
             Column(
                 modifier = modifier,
@@ -216,7 +362,7 @@ fun ArtAndDescriptionCard(
                 verticalArrangement = Arrangement.Top
             ) {
                 Text(
-                    modifier = Modifier.padding(bottom = dimensionResource(R.dimen.padding_medium)),
+                    modifier = Modifier.padding(bottom = dimensionResource(R.dimen.padding_small)),
                     text = artList[click].title,
                     style = MaterialTheme.typography.titleLarge
                 )
@@ -250,6 +396,17 @@ fun ChangeViewButton(
             imageVector = Icons.TwoTone.List,
             contentDescription = stringResource(id = R.string.change_view_button),
             tint = MaterialTheme.colorScheme.secondary
+        )
+    }
+}
+
+@Composable
+fun MenuButton() {
+    IconButton(onClick = { }) {
+        Icon(
+            imageVector = Icons.Sharp.Menu,
+            contentDescription = "Art Menu",
+            modifier = Modifier.size(18.dp)
         )
     }
 }

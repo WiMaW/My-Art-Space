@@ -8,7 +8,8 @@ import androidx.room.RoomDatabase
 @Database(entities = [Album::class, Art::class], version = 1)
 abstract class MyArtSpaceDatabase : RoomDatabase() {
 
-    abstract fun getMyArtSpaceDao() : MyArtSpaceDao
+    abstract fun getMyAlbumDao() : MyArtSpaceDao
+    abstract fun getMyArtDao() : MyArtDao
 
     companion object {
 

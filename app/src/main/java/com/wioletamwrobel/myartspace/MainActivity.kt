@@ -26,14 +26,18 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.wioletamwrobel.myartspace.model.Album
+import com.wioletamwrobel.myartspace.model.MyArtDao
 import com.wioletamwrobel.myartspace.model.MyArtSpaceDao
 import com.wioletamwrobel.myartspace.model.MyArtSpaceDatabase
 import com.wioletamwrobel.myartspace.ui.theme.MyArtSpaceTheme
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import kotlin.concurrent.thread
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var viewModel: MyArtSpaceAppViewModel
+    //private lateinit var viewModel: MyArtSpaceAppViewModel
+
+    val viewModel by viewModel<MyArtSpaceAppViewModel>()
     private lateinit var uiState: State<MyArtSpaceUiState>
     private lateinit var albumList: List<Album>
 
@@ -41,7 +45,11 @@ class MainActivity : ComponentActivity() {
         MyArtSpaceDatabase.getDatabase(this)
     }
     private val myArtSpaceDao: MyArtSpaceDao by lazy {
-        database.getMyArtSpaceDao()
+        database.getMyAlbumDao()
+    }
+
+    private val myArtDao: MyArtDao by lazy {
+        database.getMyArtDao()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,21 +62,20 @@ class MainActivity : ComponentActivity() {
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background)
                 ) {
+                    uiState = viewModel.uiState.collectAsState()
                     thread {
                         albumList = myArtSpaceDao.getAllAlbums()
                     }
-                    CreateViewModel()
                     Navigation()
                 }
             }
         }
     }
 
-    @Composable
-    fun CreateViewModel() {
-        viewModel = androidx.lifecycle.viewmodel.compose.viewModel()
-        uiState = viewModel.uiState.collectAsState()
-    }
+//    @Composable
+//    fun CreateViewModel() {
+//
+//    }
 
     @SuppressLint("ComposableDestinationInComposeScope")
     @Composable
@@ -110,13 +117,18 @@ class MainActivity : ComponentActivity() {
                     viewModel = viewModel,
                     myArtSpaceDao,
                     albumList = albumList,
-                    navController = navController
+                    navController = navController,
+                    myArtDao = myArtDao
                 )
             }
             composable(route = "art_card_screen") {
                 ArtCardScreenApp(
-                    albumId = 0,
-                    viewModel = viewModel
+                    albumId = viewModel.currentAlbumId,
+                    viewModel = viewModel,
+                    uiState = uiState,
+                    navController = navController,
+                    myArtDao = myArtDao,
+                    artListSizeFromCurrentAlbum = viewModel.artAmountInCurrentAlbum
                 )
             }
         }
