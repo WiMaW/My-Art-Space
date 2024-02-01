@@ -104,7 +104,7 @@ fun HomeScreen(
             )
         },
         modifier = Modifier
-            .padding(vertical = dimensionResource(R.dimen.padding_medium))
+            .padding(top = dimensionResource(R.dimen.padding_medium))
             .fillMaxSize()
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
@@ -113,7 +113,8 @@ fun HomeScreen(
                 navController = navController,
                 viewModel = viewModel,
                 myArtDao = myArtDao,
-                myArtSpaceDao = myArtSpaceDao
+                myArtSpaceDao = myArtSpaceDao,
+                uiState = uiState
             )
         }
     }
@@ -270,6 +271,7 @@ fun CreateDialogsForNavigationBarItems(
                     viewModel.updateAlbumListToDisplay(myArtSpaceDao.getAllAlbums())
                 }
                 viewModel.navigateToHomeScreenFromDialog()
+                viewModel.clearUserInputNewAlbumFields()
             },
             onDismissButtonClicked = { viewModel.navigateToHomeScreenFromDialog() })
 
@@ -391,7 +393,8 @@ fun AlbumsLazyColumn(
     navController: NavController,
     viewModel: MyArtSpaceAppViewModel,
     myArtDao: MyArtDao,
-    myArtSpaceDao: MyArtSpaceDao
+    myArtSpaceDao: MyArtSpaceDao,
+    uiState: State<MyArtSpaceUiState>
 ) {
 
     val color = MaterialTheme.colorScheme.outlineVariant
@@ -467,7 +470,11 @@ fun AlbumsLazyColumn(
                         }
                     }
                     Column {
-                        EditButton()
+                        EditButton(
+                            onEditButtonClicked = {
+                                viewModel.navigateToEditAlbumAlertDialog()
+                            }
+                        )
                         DeleteButton(
                             onDeleteButtonClicked = {
                                 thread {
@@ -477,15 +484,19 @@ fun AlbumsLazyColumn(
                             }
                         )
                     }
+                    if (uiState.value.isEditAlbumButtonClicked) {
+
+                    }
                 }
             }
         }
     }
 }
 
+
 @Composable
-fun EditButton() {
-    IconButton(onClick = { }) {
+fun EditButton(onEditButtonClicked: () -> Unit) {
+    IconButton(onClick = onEditButtonClicked) {
         Icon(
             imageVector = Icons.Sharp.Edit,
             contentDescription = "Edit Album",

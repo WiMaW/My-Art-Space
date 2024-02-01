@@ -24,11 +24,11 @@ class MyArtSpaceAppViewModel(
 
     //AlertDialog Add Album User Inputs
     var userInputNewAlbumTitle by mutableStateOf("")
-        private set
+
     var userInputNewAlbumDescription by mutableStateOf("")
-        private set
+
     var userInputNewAlbumCreationDate by mutableStateOf("")
-        private set
+
     var userInputNewAlbumImage by mutableStateOf("")
 
     fun updateUserInputNewAlbumTitle(newAlbumTitle: String) {
@@ -50,6 +50,13 @@ class MyArtSpaceAppViewModel(
         }
     }
 
+    fun clearUserInputNewAlbumFields() {
+        userInputNewAlbumTitle = ""
+        userInputNewAlbumDescription = ""
+        userInputNewAlbumCreationDate = ""
+        userInputNewAlbumImage = ""
+    }
+
     //Updating albumList to display
     var albumListToDisplay: List<Album> by mutableStateOf(emptyList())
 
@@ -67,9 +74,8 @@ class MyArtSpaceAppViewModel(
 
     //Sending album id between screens
     var currentAlbumId: Long by mutableLongStateOf(0)
-        private set
     var artAmountInCurrentAlbum: Int by mutableIntStateOf(0)
-        private set
+
 
     fun updateAlbumId(albumId: Long) {
         currentAlbumId = albumId
@@ -107,6 +113,13 @@ class MyArtSpaceAppViewModel(
         }
     }
 
+    fun clearUserInputNewArtFields() {
+        userInputNewArtTitle = ""
+        userInputNewArtMethod = ""
+        userInputNewArtDate = ""
+        userInputNewArtImage = ""
+    }
+
     //saving current album art list to display in ArtCardScreen
     var artListInCurrentAlbum by mutableStateOf(emptyList<Art>())
 
@@ -117,7 +130,6 @@ class MyArtSpaceAppViewModel(
         viewModelScope.launch {
             try {
                 artListInCurrentAlbum = artList.toMutableList()
-                //myArtSpaceDatabaseRepository.getAllArtsFromCurrentAlbum(currentAlbumId).toMutableList()
             } catch (e: Exception) {
 
             }
@@ -143,6 +155,18 @@ class MyArtSpaceAppViewModel(
         }
     }
 
+    fun navigateToEditAlbumAlertDialog() {
+        _uiState.update {
+            it.copy(isEditAlbumButtonClicked = true)
+        }
+    }
+
+    fun navigateToHomeScreenFromEditAlbumAlertDialog() {
+        _uiState.update {
+            it.copy(isEditAlbumButtonClicked = false)
+        }
+    }
+
     fun navigateToArtCardScreenFromAlertDialog() {
         _uiState.update {
             it.copy(isAddArtButtonClicked = false)
@@ -156,6 +180,7 @@ data class MyArtSpaceUiState(
     val isAlbumPhotoAdded: Boolean = false,
     val isArtPhotoAdded: Boolean = false,
     val isAddArtButtonClicked: Boolean = false,
+    val isEditAlbumButtonClicked: Boolean = false,
     val navigationBarItemClicked: Int = 0,
 )
 

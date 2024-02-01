@@ -21,7 +21,7 @@ interface MyArtSpaceDao {
     @Query("SELECT * FROM album WHERE id = :albumId")
     fun getAlbumById(albumId: Long): Album
 
-    @Update(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun updateAlbum(album: Album)
 
     @Delete

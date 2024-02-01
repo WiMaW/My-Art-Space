@@ -82,7 +82,11 @@ fun ArtCardScreen(
             ArtCardScreenWithArts(
                 viewModel = viewModel,
                 artListSizeFromCurrentAlbum = artListSizeFromCurrentAlbum,
-                onClickHomeButton = { navController.navigate("home_screen") }
+                onClickHomeButton = { navController.navigate("home_screen") },
+                uiState = uiState,
+                navController = navController,
+                myArtDao = myArtDao,
+                albumId = albumId
             )
         }
     }
@@ -153,66 +157,87 @@ fun ArtCardScreenAppWithoutArts(
         }
     }
 }
-//                    Spacer(modifier = Modifier.weight(1f))
-//                    BottomNavigationBar(
-//                        viewModel = viewModel,
-//                        textItemOne = stringResource(id = R.string.edit_art),
-//                        iconItemOne = Icons.Filled.Edit,
-//                        contentDescriptionItemOne = stringResource(id = R.string.edit_art),
-//                        textItemTwo = stringResource(R.string.delete_art),
-//                        iconItemTwo = Icons.Filled.Delete,
-//                        contentDescriptionItemTwo = stringResource(R.string.delete_art),
-//                        textItemThree = stringResource(R.string.share_art),
-//                        iconItemThree = Icons.Filled.Share,
-//                        contentDescriptionItemThree = stringResource(R.string.share_art),
-//                        textItemFour = stringResource(R.string.add_art),
-//                        iconItemFour = Icons.Filled.Add,
-//                        contentDescriptionItemFour = stringResource(R.string.add_art),
-//                    )
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArtCardScreenWithArts(
     viewModel: MyArtSpaceAppViewModel,
     artListSizeFromCurrentAlbum: Int,
-    onClickHomeButton: () -> Unit
+    onClickHomeButton: () -> Unit,
+    uiState: State<MyArtSpaceUiState>,
+    navController: NavController,
+    myArtDao: MyArtDao,
+    albumId: Long
 ) {
     var click by remember {
-        mutableStateOf(0)
+        mutableStateOf(1)
     }
 
-    val clickLimit: Int = artListSizeFromCurrentAlbum - 1
-        Scaffold (
-            floatingActionButton = {
-                    AddArtFloatingActionButton(viewModel = viewModel)
-               },
-            modifier = Modifier
-                .padding(
-                    vertical = dimensionResource(id = R.dimen.padding_large),
-                    horizontal = dimensionResource(
-                        id = R.dimen.padding_small
-                    )
-                )
-                .fillMaxSize()
-        ){ innerPadding ->
-            Box (
-                modifier = Modifier
-                    .padding(innerPadding)
-                    .fillMaxSize()
-                    .verticalScroll(
-                        rememberScrollState()
-                    )){
-                ArtAndDescriptionCard(
-                    click = click,
-                    artList = viewModel.artListInCurrentAlbum.toMutableStateList(),
-                    onClickHomeButton = onClickHomeButton,
-                    viewModel = viewModel,
-                    onPrevButtonClicked = { if (click > 0) click-- else click = clickLimit },
-                    onNextButtonClicked = { if (click < clickLimit) click++ else click = 0 }
-                )
-            }
+    val clickLimit: Int = artListSizeFromCurrentAlbum
 
+    Scaffold(
+        floatingActionButton = {
+            AddArtFloatingActionButton(viewModel = viewModel)
+        },
+        modifier = Modifier
+            .padding(
+                vertical = dimensionResource(id = R.dimen.padding_large),
+                horizontal = dimensionResource(
+                    id = R.dimen.padding_small
+                )
+            )
+            .fillMaxSize()
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+                .verticalScroll(
+                    rememberScrollState()
+                )
+        ) {
+            ArtAndDescriptionCard(
+                click = click,
+                artList = viewModel.artListInCurrentAlbum.toMutableStateList(),
+                onClickHomeButton = onClickHomeButton,
+                viewModel = viewModel,
+                onPrevButtonClicked = { if (click > 0) click-- else click = clickLimit },
+                onNextButtonClicked = { if (click < clickLimit) click++ else click = 0 }
+            )
         }
+
+    }
+    if (uiState.value.isAddArtButtonClicked) {
+        AddArtAlertDialog(
+            uiState = uiState,
+            onDissmisedButtonClicked = {
+                navController.navigate("art_card_screen")
+                viewModel.navigateToArtCardScreenFromAlertDialog()
+            },
+            onConfirmButtonClicked = {
+                viewModel.clearUserInputNewArtFields()
+                val art = Art(
+                    title = viewModel.userInputNewArtTitle,
+                    method = viewModel.userInputNewArtMethod,
+                    date = viewModel.userInputNewArtDate,
+                    image = viewModel.userInputNewArtImage,
+                    albumId = albumId,
+                )
+                thread {
+                    myArtDao.createArt(art)
+                    viewModel.updateCurrentAlbumArtListToDisplay(
+                        myArtDao.getAllArtsFromCurrentAlbum(
+                            viewModel.currentAlbumId
+                        )
+                    )
+                }
+                viewModel.updateArtAmountInCurrentAlbum(viewModel.artListInCurrentAlbum.size)
+                viewModel.navigateToArtCardScreenFromAlertDialog()
+            },
+            viewModel = viewModel
+        )
+    }
 }
 
 @Composable
