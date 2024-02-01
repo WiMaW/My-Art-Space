@@ -24,15 +24,17 @@ import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.sharp.Delete
-import androidx.compose.material.icons.sharp.Menu
+import androidx.compose.material.icons.sharp.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -72,6 +74,7 @@ import kotlin.concurrent.thread
 //    }
 //}
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     uiState: State<MyArtSpaceUiState>,
@@ -81,36 +84,38 @@ fun HomeScreen(
     albumList: List<Album>,
     navController: NavController
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small)),
+    Scaffold(
+        topBar = { AppNameAndIcon() },
+        bottomBar = {
+            BottomNavigationBar(
+                viewModel = viewModel,
+                textItemOne = stringResource(id = R.string.add_album),
+                iconItemOne = Icons.Filled.Add,
+                contentDescriptionItemOne = stringResource(id = R.string.add_album),
+                textItemTwo = stringResource(R.string.search),
+                iconItemTwo = Icons.Filled.Search,
+                contentDescriptionItemTwo = stringResource(R.string.search),
+                textItemThree = stringResource(R.string.account),
+                iconItemThree = Icons.Filled.AccountCircle,
+                contentDescriptionItemThree = stringResource(R.string.account),
+                textItemFour = stringResource(R.string.settings),
+                iconItemFour = Icons.Filled.Settings,
+                contentDescriptionItemFour = stringResource(R.string.settings),
+            )
+        },
         modifier = Modifier
-            .padding(vertical = dimensionResource(id = R.dimen.padding_medium))
+            .padding(vertical = dimensionResource(R.dimen.padding_medium))
             .fillMaxSize()
-    ) {
-        AppNameAndIcon()
-        AlbumsLazyColumn(
-            albumList = albumList,
-            navController = navController,
-            viewModel = viewModel,
-            myArtDao = myArtDao
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        BottomNavigationBar(
-            viewModel = viewModel,
-            textItemOne = stringResource(id = R.string.add_album),
-            iconItemOne = Icons.Filled.Add,
-            contentDescriptionItemOne = stringResource(id = R.string.add_album),
-            textItemTwo = stringResource(R.string.search),
-            iconItemTwo = Icons.Filled.Search,
-            contentDescriptionItemTwo = stringResource(R.string.search),
-            textItemThree = stringResource(R.string.account),
-            iconItemThree = Icons.Filled.AccountCircle,
-            contentDescriptionItemThree = stringResource(R.string.account),
-            textItemFour = stringResource(R.string.settings),
-            iconItemFour = Icons.Filled.Settings,
-            contentDescriptionItemFour = stringResource(R.string.settings),
-        )
+    ) { innerPadding ->
+        Column(modifier = Modifier.padding(innerPadding)) {
+            AlbumsLazyColumn(
+                albumList = albumList,
+                navController = navController,
+                viewModel = viewModel,
+                myArtDao = myArtDao,
+                myArtSpaceDao = myArtSpaceDao
+            )
+        }
     }
     CreateDialogsForNavigationBarItems(
         navigationBarItemNumber = uiState.value.navigationBarItemClicked,
@@ -262,6 +267,7 @@ fun CreateDialogsForNavigationBarItems(
                 )
                 thread {
                     myArtSpaceDao.createAlbum(album)
+                    viewModel.updateAlbumListToDisplay(myArtSpaceDao.getAllAlbums())
                 }
                 viewModel.navigateToHomeScreenFromDialog()
             },
@@ -384,12 +390,15 @@ fun AlbumsLazyColumn(
     albumList: List<Album>,
     navController: NavController,
     viewModel: MyArtSpaceAppViewModel,
-    myArtDao: MyArtDao
+    myArtDao: MyArtDao,
+    myArtSpaceDao: MyArtSpaceDao
 ) {
 
     val color = MaterialTheme.colorScheme.outlineVariant
 
-    LazyColumn(modifier = Modifier.padding(dimensionResource(R.dimen.padding_small))) {
+    LazyColumn(
+        modifier = Modifier.padding(dimensionResource(R.dimen.padding_small))
+    ) {
         items(albumList) { album ->
             Card(
                 modifier = Modifier
@@ -399,8 +408,16 @@ fun AlbumsLazyColumn(
                         navController.navigate("art_card_screen")
                         viewModel.updateAlbumId(album.id)
                         thread {
-                            viewModel.updateArtAmountInCurrentAlbum(myArtDao.getAllArtsFromCurrentAlbum(viewModel.currentAlbumId).size)
-                            viewModel.updateCurrentAlbumArtListToDisplay(myArtDao.getAllArtsFromCurrentAlbum(viewModel.currentAlbumId))
+                            viewModel.updateArtAmountInCurrentAlbum(
+                                myArtDao.getAllArtsFromCurrentAlbum(
+                                    viewModel.currentAlbumId
+                                ).size
+                            )
+                            viewModel.updateCurrentAlbumArtListToDisplay(
+                                myArtDao.getAllArtsFromCurrentAlbum(
+                                    viewModel.currentAlbumId
+                                )
+                            )
                         }
                     },
                 elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(R.dimen.padding_extra_small))
@@ -451,7 +468,14 @@ fun AlbumsLazyColumn(
                     }
                     Column {
                         EditButton()
-                        DeleteButton()
+                        DeleteButton(
+                            onDeleteButtonClicked = {
+                                thread {
+                                    myArtSpaceDao.deleteAlbum(album)
+                                    viewModel.updateAlbumListToDisplay(myArtSpaceDao.getAllAlbums())
+                                }
+                            }
+                        )
                     }
                 }
             }
@@ -463,7 +487,7 @@ fun AlbumsLazyColumn(
 fun EditButton() {
     IconButton(onClick = { }) {
         Icon(
-            imageVector = Icons.Sharp.Menu,
+            imageVector = Icons.Sharp.Edit,
             contentDescription = "Edit Album",
             modifier = Modifier.size(18.dp)
         )
@@ -471,8 +495,8 @@ fun EditButton() {
 }
 
 @Composable
-fun DeleteButton() {
-    IconButton(onClick = { }) {
+fun DeleteButton(onDeleteButtonClicked: () -> Unit) {
+    IconButton(onClick = onDeleteButtonClicked) {
         Icon(
             imageVector = Icons.Sharp.Delete,
             contentDescription = "Edit Album",

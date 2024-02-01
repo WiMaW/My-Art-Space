@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -22,14 +24,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.wioletamwrobel.myartspace.model.Album
 import com.wioletamwrobel.myartspace.model.MyArtDao
 import com.wioletamwrobel.myartspace.model.MyArtSpaceDao
 import com.wioletamwrobel.myartspace.model.MyArtSpaceDatabase
 import com.wioletamwrobel.myartspace.ui.theme.MyArtSpaceTheme
+import com.wioletamwrobel.myartspace.ui.theme.Shapes
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import kotlin.concurrent.thread
 
@@ -39,7 +42,7 @@ class MainActivity : ComponentActivity() {
 
     val viewModel by viewModel<MyArtSpaceAppViewModel>()
     private lateinit var uiState: State<MyArtSpaceUiState>
-    private lateinit var albumList: List<Album>
+    //private lateinit var albumList: List<Album>
 
     private val database: MyArtSpaceDatabase by lazy {
         MyArtSpaceDatabase.getDatabase(this)
@@ -64,13 +67,20 @@ class MainActivity : ComponentActivity() {
                 ) {
                     uiState = viewModel.uiState.collectAsState()
                     thread {
-                        albumList = myArtSpaceDao.getAllAlbums()
+                        viewModel.updateAlbumListToDisplay(myArtSpaceDao.getAllAlbums())
                     }
                     Navigation()
                 }
             }
         }
     }
+
+//    override fun onResume() {
+//        super.onResume()
+//        thread {
+//            albumList = myArtSpaceDao.getAllAlbums()
+//        }
+//    }
 
 //    @Composable
 //    fun CreateViewModel() {
@@ -116,13 +126,13 @@ class MainActivity : ComponentActivity() {
                     uiState = uiState,
                     viewModel = viewModel,
                     myArtSpaceDao,
-                    albumList = albumList,
+                    albumList = viewModel.albumListToDisplay,
                     navController = navController,
                     myArtDao = myArtDao
                 )
             }
             composable(route = "art_card_screen") {
-                ArtCardScreenApp(
+                ArtCardScreen(
                     albumId = viewModel.currentAlbumId,
                     viewModel = viewModel,
                     uiState = uiState,
@@ -171,6 +181,16 @@ class MainActivity : ComponentActivity() {
                 text = stringResource(R.string.log_in),
                 modifier = Modifier
             )
+        }
+    }
+
+    @Composable
+    fun ActionButton(onClick: () -> Unit, text: String, modifier: Modifier) {
+        Button(
+            onClick = onClick, modifier = modifier.widthIn(min = 250.dp),
+            shape = Shapes.small
+        ) {
+            Text(text = text)
         }
     }
 
