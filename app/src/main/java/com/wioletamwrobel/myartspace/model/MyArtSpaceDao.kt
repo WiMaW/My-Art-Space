@@ -26,6 +26,9 @@ interface MyArtSpaceDao {
 
     @Delete
     fun deleteAlbum(album: Album)
+
+    @Query("DELETE FROM art WHERE albumId = :albumId")
+    fun deleteAllArtFromAlbum(albumId: Long)
 }
 
 //Art

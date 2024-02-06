@@ -59,6 +59,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
+
             MyArtSpaceTheme {
                 Surface(
                     modifier = Modifier

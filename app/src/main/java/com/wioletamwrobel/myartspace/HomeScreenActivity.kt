@@ -479,6 +479,7 @@ fun AlbumsLazyColumn(
                             onDeleteButtonClicked = {
                                 thread {
                                     myArtSpaceDao.deleteAlbum(album)
+                                    myArtSpaceDao.deleteAllArtFromAlbum(album.id)
                                     viewModel.updateAlbumListToDisplay(myArtSpaceDao.getAllAlbums())
                                 }
                             }

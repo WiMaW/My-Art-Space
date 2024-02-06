@@ -5,10 +5,13 @@ import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +20,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PageSize
+import androidx.compose.foundation.pager.PagerDefaults
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -37,8 +44,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
@@ -56,6 +64,7 @@ import coil.compose.AsyncImage
 import com.wioletamwrobel.myartspace.model.Art
 import com.wioletamwrobel.myartspace.model.MyArtDao
 import com.wioletamwrobel.myartspace.ui.theme.md_theme_light_primary
+import kotlinx.coroutines.launch
 import kotlin.concurrent.thread
 
 @Composable
@@ -148,6 +157,7 @@ fun ArtCardScreenAppWithoutArts(
                                 viewModel.currentAlbumId
                             )
                         )
+                        viewModel.clearUserInputNewArtFields()
                     }
                     viewModel.updateArtAmountInCurrentAlbum(viewModel.artListInCurrentAlbum.size)
                     viewModel.navigateToArtCardScreenFromAlertDialog()
@@ -170,11 +180,9 @@ fun ArtCardScreenWithArts(
     myArtDao: MyArtDao,
     albumId: Long
 ) {
-    var click by remember {
-        mutableStateOf(1)
+    val clickLimit: Int by remember {
+        mutableIntStateOf(artListSizeFromCurrentAlbum)
     }
-
-    val clickLimit: Int = artListSizeFromCurrentAlbum
 
     Scaffold(
         floatingActionButton = {
@@ -198,15 +206,44 @@ fun ArtCardScreenWithArts(
                 )
         ) {
             ArtAndDescriptionCard(
-                click = click,
+                clickLimit = clickLimit,
                 artList = viewModel.artListInCurrentAlbum.toMutableStateList(),
                 onClickHomeButton = onClickHomeButton,
                 viewModel = viewModel,
-                onPrevButtonClicked = { if (click > 0) click-- else click = clickLimit },
-                onNextButtonClicked = { if (click < clickLimit) click++ else click = 0 }
+//                onPrevButtonClicked = { if (click > 0) click-- else click = clickLimit },
+//                onNextButtonClicked = { if (click < clickLimit) click++ else click = 0 }
             )
         }
-
+        if (uiState.value.isAddArtButtonClicked) {
+            AddArtAlertDialog(
+                uiState = uiState,
+                onDissmisedButtonClicked = {
+                    navController.navigate("art_card_screen")
+                    viewModel.navigateToArtCardScreenFromAlertDialog()
+                },
+                onConfirmButtonClicked = {
+                    val art = Art(
+                        title = viewModel.userInputNewArtTitle,
+                        method = viewModel.userInputNewArtMethod,
+                        date = viewModel.userInputNewArtDate,
+                        image = viewModel.userInputNewArtImage,
+                        albumId = albumId,
+                    )
+                    thread {
+                        myArtDao.createArt(art)
+                        viewModel.updateCurrentAlbumArtListToDisplay(
+                            myArtDao.getAllArtsFromCurrentAlbum(
+                                viewModel.currentAlbumId
+                            )
+                        )
+                        viewModel.clearUserInputNewArtFields()
+                    }
+                    viewModel.updateArtAmountInCurrentAlbum(viewModel.artListInCurrentAlbum.size)
+                    viewModel.navigateToArtCardScreenFromAlertDialog()
+                },
+                viewModel = viewModel
+            )
+        }
     }
     if (uiState.value.isAddArtButtonClicked) {
         AddArtAlertDialog(
@@ -395,16 +432,27 @@ fun NextPrevButton(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ArtAndDescriptionCard(
     modifier: Modifier = Modifier,
     artList: MutableList<Art>,
-    click: Int,
+    clickLimit: Int,
     onClickHomeButton: () -> Unit,
-    onPrevButtonClicked: () -> Unit,
-    onNextButtonClicked: () -> Unit,
+//    onPrevButtonClicked: () -> Unit,
+//    onNextButtonClicked: () -> Unit,
     viewModel: MyArtSpaceAppViewModel
 ) {
+
+    val pagerState = rememberPagerState(
+        initialPage = 0,
+        initialPageOffsetFraction = 0f
+    ) {
+        clickLimit
+    }
+
+    val scope = rememberCoroutineScope()
+
     Card(
         modifier = modifier
             .padding(horizontal = dimensionResource(R.dimen.padding_small))
@@ -423,50 +471,75 @@ fun ArtAndDescriptionCard(
                 Spacer(modifier = Modifier.weight(1f))
                 MenuButton()
             }
-            AsyncImage(
-                model = artList[click].image,
-                contentDescription = null,
-                modifier = Modifier
-                    .padding(dimensionResource(R.dimen.padding_small))
-                    .fillMaxWidth(),
-                //.height(220.dp),
-                contentScale = ContentScale.Crop
-            )
-            Row {
-                NextPrevButton(
-                    onClick = onPrevButtonClicked, //if (click > 0) click-- else click = clickLimit },
-                    icon = painterResource(R.drawable.icon_navigate_before),
-                )
-                NextPrevButton(
-                    onClick = onNextButtonClicked, //{ if (click < clickLimit) click++ else click = 0 },
-                    icon = painterResource(R.drawable.icon_navigate_next),
-                )
-            }
+        }
+        HorizontalPager(
+            modifier = Modifier,
+            state = rememberPagerState { clickLimit },
+            pageSpacing = 0.dp,
+            userScrollEnabled = true,
+            reverseLayout = false,
+            contentPadding = PaddingValues(0.dp),
+            beyondBoundsPageCount = 0,
+            pageSize = PageSize.Fill,
+            flingBehavior = PagerDefaults.flingBehavior(state = pagerState),
+            key = null,
+            pageNestedScrollConnection = PagerDefaults.pageNestedScrollConnection(
+                Orientation.Horizontal
+            ),
+            pageContent = { page ->
+                Column(
+                    modifier = modifier,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Top
+                ) {
+                    AsyncImage(
+                        model = artList[page].image,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .padding(dimensionResource(R.dimen.padding_small))
+                            .fillMaxWidth(),
+                        contentScale = ContentScale.Crop
+                    )
+                    Text(
+                        modifier = Modifier.padding(bottom = dimensionResource(R.dimen.padding_small)),
+                        text = artList[page].title,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                    Text(
+                        text = artList[page].method,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        modifier = Modifier
+                            .padding(
+                                bottom = dimensionResource(R.dimen.padding_medium),
+                                top = dimensionResource(R.dimen.padding_extra_small)
+                            ),
+                        text = artList[page].date,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
 
-            Column(
-                modifier = modifier,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Top
-            ) {
-                Text(
-                    modifier = Modifier.padding(bottom = dimensionResource(R.dimen.padding_small)),
-                    text = artList[click].title,
-                    style = MaterialTheme.typography.titleLarge
-                )
-                Text(
-                    text = artList[click].method,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Text(
-                    modifier = Modifier
-                        .padding(
-                            bottom = dimensionResource(R.dimen.padding_medium),
-                            top = dimensionResource(R.dimen.padding_extra_small)
-                        ),
-                    text = artList[click].date,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
+            })
+        Row (
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center){
+            NextPrevButton(
+                onClick = {
+                    scope.launch {
+                        pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                    }
+                },
+                icon = painterResource(R.drawable.icon_navigate_before),
+            )
+            NextPrevButton(
+                onClick = {
+                    scope.launch {
+                        pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                    }
+                },
+                icon = painterResource(R.drawable.icon_navigate_next),
+            )
         }
     }
 }
