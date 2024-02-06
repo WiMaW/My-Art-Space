@@ -1,6 +1,5 @@
 package com.wioletamwrobel.myartspace
 
-import android.annotation.SuppressLint
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -81,7 +80,6 @@ fun ArtCardScreen(
                 viewModel = viewModel,
             )
         }
-
         else -> {
             ArtCardScreenWithArts(
                 viewModel = viewModel,
@@ -124,7 +122,6 @@ fun ArtCardScreen(
     }
 }
 
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState")
 @Composable
 fun ArtCardScreenAppWithoutArts(
     viewModel: MyArtSpaceAppViewModel,
@@ -137,7 +134,6 @@ fun ArtCardScreenAppWithoutArts(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-
         AppNameAndIcon()
         Row(modifier = Modifier.padding(top = dimensionResource(R.dimen.padding_medium))) {
             Button(
@@ -340,21 +336,6 @@ fun AppNameAndIcon(modifier: Modifier = Modifier) {
     )
 }
 
-@Composable
-fun NextPrevButton(
-    onClick: () -> Unit,
-    icon: Painter,
-) {
-    IconButton(
-        onClick = onClick,
-    ) {
-        Icon(
-            painter = icon,
-            contentDescription = ""
-        )
-    }
-}
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ArtAndDescriptionCard(
@@ -362,14 +343,9 @@ fun ArtAndDescriptionCard(
     artList: MutableList<Art>,
     clickLimit: Int,
     onClickHomeButton: () -> Unit,
-//    onPrevButtonClicked: () -> Unit,
-//    onNextButtonClicked: () -> Unit,
 ) {
 
-    val pagerState = rememberPagerState(
-        initialPage = 0,
-        initialPageOffsetFraction = 0f
-    ) {
+    val pagerState = rememberPagerState() {
         clickLimit
     }
 
@@ -396,7 +372,7 @@ fun ArtAndDescriptionCard(
         }
         HorizontalPager(
             modifier = Modifier,
-            state = rememberPagerState { clickLimit },
+            state = pagerState,
             pageSpacing = 0.dp,
             userScrollEnabled = true,
             reverseLayout = false,
@@ -446,22 +422,24 @@ fun ArtAndDescriptionCard(
         Row (
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center){
-            NextPrevButton(
+            IconButton(
                 onClick = {
                     scope.launch {
                         pagerState.animateScrollToPage(pagerState.currentPage - 1)
                     }
                 },
-                icon = painterResource(R.drawable.icon_navigate_before),
-            )
-            NextPrevButton(
+            ) {
+                Icon(painter = painterResource(R.drawable.icon_navigate_before), contentDescription = "")
+            }
+            IconButton(
                 onClick = {
                     scope.launch {
                         pagerState.animateScrollToPage(pagerState.currentPage + 1)
                     }
                 },
-                icon = painterResource(R.drawable.icon_navigate_next),
-            )
+            ) {
+                Icon(painter = painterResource(R.drawable.icon_navigate_next), contentDescription = "")
+            }
         }
     }
 }
