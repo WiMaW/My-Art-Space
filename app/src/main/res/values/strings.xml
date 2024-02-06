@@ -1,42 +1,6 @@
 <resources>
     <string name="app_name">MyArtSpace</string>
 
-    <string name="apple">\"Apple\"</string>
-    <string name="ceramics">\"Ceramics\"</string>
-    <string name="coffeepot_and_box">\"Coffee pot and box\"</string>
-    <string name="lake">\"Lake\"</string>
-    <string name="leaves">\"Leaves\"</string>
-    <string name="starry_night">\"Starry night\"</string>
-    <string name="tomato">\"Tomato\"</string>
-    <string name="vegetables">\"Vegetables\"</string>
-
-    <string name="apple_method">Acrylics on paper</string>
-    <string name="ceramics_method">Acrylics on paper</string>
-    <string name="coffeepot_and_box_method">Gouache on paper</string>
-    <string name="lake_method">Acrylics on paper</string>
-    <string name="leaves_method">Gouache on paper</string>
-    <string name="starry_night_method">Watercolors on paper</string>
-    <string name="tomato_method">Gouache on paper</string>
-    <string name="vegetables_method">Gouache on paper</string>
-
-    <string name="apple_date">September 2021</string>
-    <string name="ceramics_date">October 2021</string>
-    <string name="coffeepot_and_box_date">April 2022</string>
-    <string name="lake_date">September 2022</string>
-    <string name="leaves_date">June 2023</string>
-    <string name="starry_night_date">January 2021</string>
-    <string name="tomato_date">January 2022</string>
-    <string name="vegetables_date">April 2022</string>
-
-    <string name="first_album_name">First Album</string>
-    <string name="second_album_name">Second Album</string>
-    <string name="first_album_description">Acrylics</string>
-    <string name="second_album_description">Gouache</string>
-    <string name="first_album_create_date">October 2020</string>
-    <string name="second_album_create_date">January 2019</string>
-
-    <string name="account_first_name">Mimi</string>
-
     <string name="change_view_button">change view</string>
     <string name="expand_button">see more</string>
     <string name="continue_button">Continue</string>
@@ -72,6 +36,6 @@
     <string name="delete_art">Delete Art</string>
     <string name="share_art">Share Art</string>
     <string name="add_art">Add Art</string>
-    <string name="add_art_title">Add your first piece of art</string>
+    <string name="add_art_title">Add piece of art</string>
 
 </resources>

@@ -55,6 +55,9 @@ class MyArtSpaceAppViewModel(
         userInputNewAlbumDescription = ""
         userInputNewAlbumCreationDate = ""
         userInputNewAlbumImage = ""
+        _uiState.update {
+            it.copy(isAlbumPhotoAdded = false)
+        }
     }
 
     //Updating albumList to display
@@ -118,22 +121,16 @@ class MyArtSpaceAppViewModel(
         userInputNewArtMethod = ""
         userInputNewArtDate = ""
         userInputNewArtImage = ""
+        _uiState.update {
+            it.copy(isArtPhotoAdded = false)
+        }
     }
 
     //saving current album art list to display in ArtCardScreen
     var artListInCurrentAlbum by mutableStateOf(emptyList<Art>())
 
-    fun updateCurrentAlbumArtListToDisplay(
-        // albumId: Long
-        artList: List<Art>
-    ) {
-        viewModelScope.launch {
-            try {
-                artListInCurrentAlbum = artList.toMutableList()
-            } catch (e: Exception) {
-
-            }
-        }
+    fun updateCurrentAlbumArtListToDisplay(artList: List<Art>) {
+        artListInCurrentAlbum = artList.toMutableList()
     }
 
     // navigation functions

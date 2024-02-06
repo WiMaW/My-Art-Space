@@ -47,7 +47,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -79,11 +78,7 @@ fun ArtCardScreen(
     when (viewModel.artListInCurrentAlbum.size) {
         0 -> {
             ArtCardScreenAppWithoutArts(
-                albumId = albumId,
                 viewModel = viewModel,
-                uiState = uiState,
-                navController = navController,
-                myArtDao = myArtDao,
             )
         }
 
@@ -92,24 +87,47 @@ fun ArtCardScreen(
                 viewModel = viewModel,
                 artListSizeFromCurrentAlbum = artListSizeFromCurrentAlbum,
                 onClickHomeButton = { navController.navigate("home_screen") },
-                uiState = uiState,
-                navController = navController,
-                myArtDao = myArtDao,
-                albumId = albumId
             )
         }
     }
+    if (uiState.value.isAddArtButtonClicked) {
+        AddArtAlertDialog(
+            uiState = uiState,
+            onDissmissedButtonClicked = {
+                navController.navigate("art_card_screen")
+                viewModel.navigateToArtCardScreenFromAlertDialog()
+                viewModel.clearUserInputNewArtFields()
+            },
+            onConfirmButtonClicked = {
+                val art = Art(
+                    title = viewModel.userInputNewArtTitle,
+                    method = viewModel.userInputNewArtMethod,
+                    date = viewModel.userInputNewArtDate,
+                    image = viewModel.userInputNewArtImage,
+                    albumId = albumId,
+                )
+                thread {
+                    myArtDao.createArt(art)
+                    viewModel.updateCurrentAlbumArtListToDisplay(
+                        myArtDao.getAllArtsFromCurrentAlbum(
+                            viewModel.currentAlbumId
+                        )
+                    )
+                }
+                viewModel.navigateToArtCardScreenFromAlertDialog()
+                navController.navigate("art_card_screen")
+                viewModel.updateArtAmountInCurrentAlbum(viewModel.artListInCurrentAlbum.size)
+                viewModel.clearUserInputNewArtFields()
+            },
+            viewModel = viewModel
+        )
+    }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState")
 @Composable
 fun ArtCardScreenAppWithoutArts(
-    albumId: Long,
     viewModel: MyArtSpaceAppViewModel,
-    uiState: State<MyArtSpaceUiState>,
-    navController: NavController,
-    myArtDao: MyArtDao,
 ) {
     Column(
         modifier = Modifier
@@ -135,36 +153,6 @@ fun ArtCardScreenAppWithoutArts(
                 Text(text = stringResource(R.string.add_art_title))
             }
         }
-        if (uiState.value.isAddArtButtonClicked) {
-            AddArtAlertDialog(
-                uiState = uiState,
-                onDissmisedButtonClicked = {
-                    navController.navigate("art_card_screen")
-                    viewModel.navigateToArtCardScreenFromAlertDialog()
-                },
-                onConfirmButtonClicked = {
-                    val art = Art(
-                        title = viewModel.userInputNewArtTitle,
-                        method = viewModel.userInputNewArtMethod,
-                        date = viewModel.userInputNewArtDate,
-                        image = viewModel.userInputNewArtImage,
-                        albumId = albumId,
-                    )
-                    thread {
-                        myArtDao.createArt(art)
-                        viewModel.updateCurrentAlbumArtListToDisplay(
-                            myArtDao.getAllArtsFromCurrentAlbum(
-                                viewModel.currentAlbumId
-                            )
-                        )
-                        viewModel.clearUserInputNewArtFields()
-                    }
-                    viewModel.updateArtAmountInCurrentAlbum(viewModel.artListInCurrentAlbum.size)
-                    viewModel.navigateToArtCardScreenFromAlertDialog()
-                },
-                viewModel = viewModel
-            )
-        }
     }
 }
 
@@ -175,10 +163,6 @@ fun ArtCardScreenWithArts(
     viewModel: MyArtSpaceAppViewModel,
     artListSizeFromCurrentAlbum: Int,
     onClickHomeButton: () -> Unit,
-    uiState: State<MyArtSpaceUiState>,
-    navController: NavController,
-    myArtDao: MyArtDao,
-    albumId: Long
 ) {
     val clickLimit: Int by remember {
         mutableIntStateOf(artListSizeFromCurrentAlbum)
@@ -208,72 +192,11 @@ fun ArtCardScreenWithArts(
             ArtAndDescriptionCard(
                 clickLimit = clickLimit,
                 artList = viewModel.artListInCurrentAlbum.toMutableStateList(),
-                onClickHomeButton = onClickHomeButton,
-                viewModel = viewModel,
+                onClickHomeButton = onClickHomeButton
 //                onPrevButtonClicked = { if (click > 0) click-- else click = clickLimit },
 //                onNextButtonClicked = { if (click < clickLimit) click++ else click = 0 }
             )
         }
-        if (uiState.value.isAddArtButtonClicked) {
-            AddArtAlertDialog(
-                uiState = uiState,
-                onDissmisedButtonClicked = {
-                    navController.navigate("art_card_screen")
-                    viewModel.navigateToArtCardScreenFromAlertDialog()
-                },
-                onConfirmButtonClicked = {
-                    val art = Art(
-                        title = viewModel.userInputNewArtTitle,
-                        method = viewModel.userInputNewArtMethod,
-                        date = viewModel.userInputNewArtDate,
-                        image = viewModel.userInputNewArtImage,
-                        albumId = albumId,
-                    )
-                    thread {
-                        myArtDao.createArt(art)
-                        viewModel.updateCurrentAlbumArtListToDisplay(
-                            myArtDao.getAllArtsFromCurrentAlbum(
-                                viewModel.currentAlbumId
-                            )
-                        )
-                        viewModel.clearUserInputNewArtFields()
-                    }
-                    viewModel.updateArtAmountInCurrentAlbum(viewModel.artListInCurrentAlbum.size)
-                    viewModel.navigateToArtCardScreenFromAlertDialog()
-                },
-                viewModel = viewModel
-            )
-        }
-    }
-    if (uiState.value.isAddArtButtonClicked) {
-        AddArtAlertDialog(
-            uiState = uiState,
-            onDissmisedButtonClicked = {
-                navController.navigate("art_card_screen")
-                viewModel.navigateToArtCardScreenFromAlertDialog()
-            },
-            onConfirmButtonClicked = {
-                viewModel.clearUserInputNewArtFields()
-                val art = Art(
-                    title = viewModel.userInputNewArtTitle,
-                    method = viewModel.userInputNewArtMethod,
-                    date = viewModel.userInputNewArtDate,
-                    image = viewModel.userInputNewArtImage,
-                    albumId = albumId,
-                )
-                thread {
-                    myArtDao.createArt(art)
-                    viewModel.updateCurrentAlbumArtListToDisplay(
-                        myArtDao.getAllArtsFromCurrentAlbum(
-                            viewModel.currentAlbumId
-                        )
-                    )
-                }
-                viewModel.updateArtAmountInCurrentAlbum(viewModel.artListInCurrentAlbum.size)
-                viewModel.navigateToArtCardScreenFromAlertDialog()
-            },
-            viewModel = viewModel
-        )
     }
 }
 
@@ -297,7 +220,7 @@ fun AddArtFloatingActionButton(
 @Composable
 fun AddArtAlertDialog(
     uiState: State<MyArtSpaceUiState>,
-    onDissmisedButtonClicked: () -> Unit,
+    onDissmissedButtonClicked: () -> Unit,
     onConfirmButtonClicked: () -> Unit,
     viewModel: MyArtSpaceAppViewModel
 ) {
@@ -336,7 +259,7 @@ fun AddArtAlertDialog(
                 uiState = uiState
             )
         },
-        onDismissButtonClicked = onDissmisedButtonClicked,
+        onDismissButtonClicked = onDissmissedButtonClicked,
         onConfirmButtonClicked = onConfirmButtonClicked
     )
 }
@@ -441,7 +364,6 @@ fun ArtAndDescriptionCard(
     onClickHomeButton: () -> Unit,
 //    onPrevButtonClicked: () -> Unit,
 //    onNextButtonClicked: () -> Unit,
-    viewModel: MyArtSpaceAppViewModel
 ) {
 
     val pagerState = rememberPagerState(
