@@ -127,10 +127,16 @@ class MyArtSpaceAppViewModel(
     }
 
     //saving current album art list to display in ArtCardScreen
-    var artListInCurrentAlbum by mutableStateOf(emptyList<Art>())
+    var artListInCurrentAlbum: List<Art> by mutableStateOf(emptyList())
 
     fun updateCurrentAlbumArtListToDisplay(artList: List<Art>) {
-        artListInCurrentAlbum = artList.toMutableList()
+        viewModelScope.launch {
+            try {
+                artListInCurrentAlbum = artList.toMutableList()
+            } catch (e: Exception) {
+
+            }
+        }
     }
 
     // navigation functions

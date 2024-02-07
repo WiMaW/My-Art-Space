@@ -114,7 +114,6 @@ fun HomeScreen(
                 viewModel = viewModel,
                 myArtDao = myArtDao,
                 myArtSpaceDao = myArtSpaceDao,
-                uiState = uiState
             )
         }
     }
@@ -143,7 +142,7 @@ fun BottomNavigationBar(
     contentDescriptionItemFour: String,
 
     ) {
-    NavigationBar() {
+    NavigationBar {
         NavigationBarItem(
             selected = true,
             onClick = { viewModel.navigateToBarItemDialog(1) },
@@ -283,6 +282,7 @@ fun CreateDialogsForNavigationBarItems(
                         myArtSpaceDao.updateAlbum(album)
                         viewModel.updateAlbumListToDisplay(myArtSpaceDao.getAllAlbums())
                     }
+                    viewModel.navigateToHomeScreenFromEditAlbumAlertDialog()
                 } else {
                     thread {
                         myArtSpaceDao.createAlbum(album)
@@ -416,7 +416,6 @@ fun AlbumsLazyColumn(
     viewModel: MyArtSpaceAppViewModel,
     myArtDao: MyArtDao,
     myArtSpaceDao: MyArtSpaceDao,
-    uiState: State<MyArtSpaceUiState>
 ) {
 
     val color = MaterialTheme.colorScheme.outlineVariant
@@ -509,15 +508,11 @@ fun AlbumsLazyColumn(
                             }
                         )
                     }
-                    if (uiState.value.isEditAlbumButtonClicked) {
-
-                    }
                 }
             }
         }
     }
 }
-
 
 @Composable
 fun EditButton(onEditButtonClicked: () -> Unit) {

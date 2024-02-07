@@ -91,34 +91,12 @@ fun ArtCardScreen(
     if (uiState.value.isAddArtButtonClicked) {
         AddArtAlertDialog(
             uiState = uiState,
-            onDissmissedButtonClicked = {
-                navController.navigate("art_card_screen")
-                viewModel.navigateToArtCardScreenFromAlertDialog()
-                viewModel.clearUserInputNewArtFields()
-            },
-            onConfirmButtonClicked = {
-                val art = Art(
-                    title = viewModel.userInputNewArtTitle,
-                    method = viewModel.userInputNewArtMethod,
-                    date = viewModel.userInputNewArtDate,
-                    image = viewModel.userInputNewArtImage,
-                    albumId = albumId,
-                )
-                thread {
-                    myArtDao.createArt(art)
-                    viewModel.updateCurrentAlbumArtListToDisplay(
-                        myArtDao.getAllArtsFromCurrentAlbum(
-                            viewModel.currentAlbumId
-                        )
-                    )
-                }
-                viewModel.navigateToArtCardScreenFromAlertDialog()
-                navController.navigate("art_card_screen")
-                viewModel.updateArtAmountInCurrentAlbum(viewModel.artListInCurrentAlbum.size)
-                viewModel.clearUserInputNewArtFields()
-            },
-            viewModel = viewModel
+            viewModel = viewModel,
+            myArtDao = myArtDao,
+            albumId = albumId,
+            navController = navController
         )
+
     }
 }
 
@@ -214,9 +192,10 @@ fun AddArtFloatingActionButton(
 @Composable
 fun AddArtAlertDialog(
     uiState: State<MyArtSpaceUiState>,
-    onDissmissedButtonClicked: () -> Unit,
-    onConfirmButtonClicked: () -> Unit,
-    viewModel: MyArtSpaceAppViewModel
+    navController: NavController,
+    viewModel: MyArtSpaceAppViewModel,
+    albumId: Long,
+    myArtDao: MyArtDao
 ) {
     val context = LocalContext.current
     val singlePhotoPickerLauncher = rememberLauncherForActivityResult(
@@ -253,8 +232,31 @@ fun AddArtAlertDialog(
                 uiState = uiState
             )
         },
-        onDismissButtonClicked = onDissmissedButtonClicked,
-        onConfirmButtonClicked = onConfirmButtonClicked
+        onDismissButtonClicked = {
+            navController.navigate("art_card_screen")
+            viewModel.navigateToArtCardScreenFromAlertDialog()
+            viewModel.clearUserInputNewArtFields()
+        },
+        onConfirmButtonClicked = {
+            val art = Art(
+                title = viewModel.userInputNewArtTitle,
+                method = viewModel.userInputNewArtMethod,
+                date = viewModel.userInputNewArtDate,
+                image = viewModel.userInputNewArtImage,
+                albumId = albumId,
+            )
+            thread {
+                myArtDao.createArt(art)
+                viewModel.updateCurrentAlbumArtListToDisplay(
+                    myArtDao.getAllArtsFromCurrentAlbum(
+                        albumId
+                    )
+                )
+                viewModel.navigateToArtCardScreenFromAlertDialog()
+                viewModel.updateArtAmountInCurrentAlbum(viewModel.artListInCurrentAlbum.size)
+                viewModel.clearUserInputNewArtFields()
+            }
+        },
     )
 }
 
@@ -393,7 +395,9 @@ fun ArtAndDescriptionCard(
                         contentDescription = null,
                         modifier = Modifier
                             .padding(dimensionResource(R.dimen.padding_small))
-                            .fillMaxWidth(),
+                            .fillMaxWidth()
+                            .height(380.dp)
+                        ,
                         contentScale = ContentScale.Crop
                     )
                     Text(
