@@ -50,7 +50,6 @@ import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
@@ -80,6 +79,7 @@ fun ArtCardScreen(
                 viewModel = viewModel,
             )
         }
+
         else -> {
             ArtCardScreenWithArts(
                 viewModel = viewModel,
@@ -189,8 +189,6 @@ fun ArtCardScreenWithArts(
                 clickLimit = clickLimit,
                 artList = viewModel.artListInCurrentAlbum.toMutableStateList(),
                 onClickHomeButton = onClickHomeButton
-//                onPrevButtonClicked = { if (click > 0) click-- else click = clickLimit },
-//                onNextButtonClicked = { if (click < clickLimit) click++ else click = 0 }
             )
         }
     }
@@ -419,9 +417,10 @@ fun ArtAndDescriptionCard(
                 }
 
             })
-        Row (
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center){
+            horizontalArrangement = Arrangement.Center
+        ) {
             IconButton(
                 onClick = {
                     scope.launch {
@@ -429,7 +428,10 @@ fun ArtAndDescriptionCard(
                     }
                 },
             ) {
-                Icon(painter = painterResource(R.drawable.icon_navigate_before), contentDescription = "")
+                Icon(
+                    painter = painterResource(R.drawable.icon_navigate_before),
+                    contentDescription = ""
+                )
             }
             IconButton(
                 onClick = {
@@ -438,7 +440,10 @@ fun ArtAndDescriptionCard(
                     }
                 },
             ) {
-                Icon(painter = painterResource(R.drawable.icon_navigate_next), contentDescription = "")
+                Icon(
+                    painter = painterResource(R.drawable.icon_navigate_next),
+                    contentDescription = ""
+                )
             }
         }
     }
@@ -480,20 +485,3 @@ fun HomeButton(onClickHomeButton: () -> Unit) {
         )
     }
 }
-
-
-//@Preview(showBackground = true)
-//@Composable
-//fun MyArtSpacePreview() {
-//    MyArtSpaceTheme {
-//        ArtCardScreenApp(artList = Datasource().LoadArt())
-//    }
-//}
-//
-//@Preview(showBackground = true)
-//@Composable
-//fun MyArtSpaceDarkPreview() {
-//    MyArtSpaceTheme(darkTheme = true) {
-//        ArtCardScreenApp(artList = Datasource().LoadArt())
-//    }
-//}

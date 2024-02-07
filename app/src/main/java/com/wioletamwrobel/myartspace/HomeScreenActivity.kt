@@ -234,7 +234,8 @@ fun CreateDialogsForNavigationBarItems(
     when (navigationBarItemNumber) {
         1 -> Dialog.CreateDialog(
             icon = { Icon(Icons.Filled.AddCircle, contentDescription = null) },
-            title = stringResource(id = R.string.add_album),
+            title = if(uiState.value.isEditAlbumButtonClicked)
+                stringResource(id = R.string.edit_album) else stringResource(id = R.string.add_album),
             dialogText = {
                 AddAlbumDialogText(
                     albumTitle = viewModel.userInputNewAlbumTitle,
@@ -260,20 +261,41 @@ fun CreateDialogsForNavigationBarItems(
                 )
             },
             onConfirmButtonClicked = {
-                val album = Album(
-                    title = viewModel.userInputNewAlbumTitle,
-                    description = viewModel.userInputNewAlbumDescription,
-                    image = viewModel.userInputNewAlbumImage,
-                    createDate = viewModel.userInputNewAlbumCreationDate,
-                )
-                thread {
-                    myArtSpaceDao.createAlbum(album)
-                    viewModel.updateAlbumListToDisplay(myArtSpaceDao.getAllAlbums())
+                val album =
+                    if(uiState.value.isEditAlbumButtonClicked) {
+                        Album(
+                            id = viewModel.currentAlbumId,
+                            title = viewModel.userInputNewAlbumTitle,
+                            description = viewModel.userInputNewAlbumDescription,
+                            image = viewModel.userInputNewAlbumImage,
+                            createDate = viewModel.userInputNewAlbumCreationDate,
+                        )
+                    } else {
+                        Album(
+                            title = viewModel.userInputNewAlbumTitle,
+                            description = viewModel.userInputNewAlbumDescription,
+                            image = viewModel.userInputNewAlbumImage,
+                            createDate = viewModel.userInputNewAlbumCreationDate,
+                        )
+                    }
+                if(uiState.value.isEditAlbumButtonClicked) {
+                    thread {
+                        myArtSpaceDao.updateAlbum(album)
+                        viewModel.updateAlbumListToDisplay(myArtSpaceDao.getAllAlbums())
+                    }
+                } else {
+                    thread {
+                        myArtSpaceDao.createAlbum(album)
+                        viewModel.updateAlbumListToDisplay(myArtSpaceDao.getAllAlbums())
+                    }
                 }
                 viewModel.navigateToHomeScreenFromDialog()
                 viewModel.clearUserInputNewAlbumFields()
             },
-            onDismissButtonClicked = { viewModel.navigateToHomeScreenFromDialog() })
+            onDismissButtonClicked = {
+                viewModel.navigateToHomeScreenFromDialog()
+                viewModel.clearUserInputNewAlbumFields()
+            })
 
         2 -> Dialog.CreateDialog(
             icon = { Icon(Icons.Filled.Search, contentDescription = null) },
@@ -473,6 +495,8 @@ fun AlbumsLazyColumn(
                         EditButton(
                             onEditButtonClicked = {
                                 viewModel.navigateToEditAlbumAlertDialog()
+                                viewModel.navigateToBarItemDialog(1)
+                                viewModel.updateAlbumId(album.id)
                             }
                         )
                         DeleteButton(

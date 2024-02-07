@@ -37,5 +37,6 @@
     <string name="share_art">Share Art</string>
     <string name="add_art">Add Art</string>
     <string name="add_art_title">Add piece of art</string>
+    <string name="edit_album">Edit Album</string>
 
 </resources>
