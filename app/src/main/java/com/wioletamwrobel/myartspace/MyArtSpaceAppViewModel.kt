@@ -175,6 +175,17 @@ class MyArtSpaceAppViewModel(
             it.copy(isAddArtButtonClicked = false)
         }
     }
+
+    fun openDropDownMenu() {
+        _uiState.update {
+            it.copy(isDropDownMenuVisible = true)
+        }
+    }
+    fun closeDropDownMenu() {
+        _uiState.update {
+            it.copy(isDropDownMenuVisible = false)
+        }
+    }
 }
 
 data class MyArtSpaceUiState(
@@ -184,6 +195,7 @@ data class MyArtSpaceUiState(
     val isArtPhotoAdded: Boolean = false,
     val isAddArtButtonClicked: Boolean = false,
     val isEditAlbumButtonClicked: Boolean = false,
+    val isDropDownMenuVisible: Boolean = false,
     val navigationBarItemClicked: Int = 0,
 )
 

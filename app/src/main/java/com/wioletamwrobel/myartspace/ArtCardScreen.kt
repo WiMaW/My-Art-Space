@@ -33,6 +33,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -44,10 +46,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.End
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
@@ -61,8 +67,8 @@ import coil.compose.AsyncImage
 import com.wioletamwrobel.myartspace.model.Art
 import com.wioletamwrobel.myartspace.model.MyArtDao
 import com.wioletamwrobel.myartspace.ui.theme.md_theme_light_primary
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlin.concurrent.thread
 
 @Composable
 fun ArtCardScreen(
@@ -85,6 +91,7 @@ fun ArtCardScreen(
                 viewModel = viewModel,
                 artListSizeFromCurrentAlbum = artListSizeFromCurrentAlbum,
                 onClickHomeButton = { navController.navigate("home_screen") },
+                uiState = uiState
             )
         }
     }
@@ -135,6 +142,7 @@ fun ArtCardScreenAppWithoutArts(
 @Composable
 fun ArtCardScreenWithArts(
     viewModel: MyArtSpaceAppViewModel,
+    uiState: State<MyArtSpaceUiState>,
     artListSizeFromCurrentAlbum: Int,
     onClickHomeButton: () -> Unit,
 ) {
@@ -166,7 +174,9 @@ fun ArtCardScreenWithArts(
             ArtAndDescriptionCard(
                 clickLimit = clickLimit,
                 artList = viewModel.artListInCurrentAlbum.toMutableStateList(),
-                onClickHomeButton = onClickHomeButton
+                onClickHomeButton = onClickHomeButton,
+                viewModel = viewModel,
+                uiState = uiState
             )
         }
     }
@@ -197,6 +207,7 @@ fun AddArtAlertDialog(
     albumId: Long,
     myArtDao: MyArtDao
 ) {
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val singlePhotoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -245,17 +256,22 @@ fun AddArtAlertDialog(
                 image = viewModel.userInputNewArtImage,
                 albumId = albumId,
             )
-            thread {
+            Dispatchers.IO.dispatch(scope.coroutineContext) {
                 myArtDao.createArt(art)
+                viewModel.updateArtAmountInCurrentAlbum(
+                    myArtDao.getAllArtsFromCurrentAlbum(
+                        albumId
+                    ).size
+                )
                 viewModel.updateCurrentAlbumArtListToDisplay(
                     myArtDao.getAllArtsFromCurrentAlbum(
                         albumId
                     )
                 )
-                viewModel.navigateToArtCardScreenFromAlertDialog()
-                viewModel.updateArtAmountInCurrentAlbum(viewModel.artListInCurrentAlbum.size)
-                viewModel.clearUserInputNewArtFields()
             }
+            navController.navigate("art_card_screen")
+            viewModel.navigateToArtCardScreenFromAlertDialog()
+            viewModel.clearUserInputNewArtFields()
         },
     )
 }
@@ -343,6 +359,8 @@ fun ArtAndDescriptionCard(
     artList: MutableList<Art>,
     clickLimit: Int,
     onClickHomeButton: () -> Unit,
+    viewModel: MyArtSpaceAppViewModel,
+    uiState: State<MyArtSpaceUiState>
 ) {
 
     val pagerState = rememberPagerState() {
@@ -367,7 +385,12 @@ fun ArtAndDescriptionCard(
                     onClickHomeButton = onClickHomeButton
                 )
                 Spacer(modifier = Modifier.weight(1f))
-                MenuButton()
+                Column {
+                    MenuButton(viewModel = viewModel)
+                    if (uiState.value.isDropDownMenuVisible) {
+                        dropDownMenu(viewModel = viewModel)
+                    }
+                }
             }
         }
         HorizontalPager(
@@ -396,8 +419,7 @@ fun ArtAndDescriptionCard(
                         modifier = Modifier
                             .padding(dimensionResource(R.dimen.padding_small))
                             .fillMaxWidth()
-                            .height(380.dp)
-                        ,
+                            .height(380.dp),
                         contentScale = ContentScale.Crop
                     )
                     Text(
@@ -469,8 +491,10 @@ fun ChangeViewButton(
 }
 
 @Composable
-fun MenuButton() {
-    IconButton(onClick = { }) {
+fun MenuButton(
+    viewModel: MyArtSpaceAppViewModel
+) {
+    IconButton(onClick = { viewModel.openDropDownMenu()}) {
         Icon(
             imageVector = Icons.Sharp.Menu,
             contentDescription = "Art Menu",
@@ -487,5 +511,21 @@ fun HomeButton(onClickHomeButton: () -> Unit) {
             contentDescription = "Return to home",
             modifier = Modifier.size(18.dp)
         )
+    }
+}
+
+@Composable
+fun dropDownMenu(
+    viewModel: MyArtSpaceAppViewModel
+) {
+    var isMenuVisible by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    DropdownMenu(expanded = true, onDismissRequest = { viewModel.closeDropDownMenu() }) {
+        DropdownMenuItem(
+            text = { Text(text = "Delete Art") },
+            onClick = { /*TODO*/ })
+        DropdownMenuItem(text = { Text(text = "Edit Art") }, onClick = { /*TODO*/ })
     }
 }
