@@ -97,6 +97,8 @@ class MyArtSpaceAppViewModel(
         private set
     var userInputNewArtImage by mutableStateOf("")
 
+    var currentArtId: Long by mutableLongStateOf(0)
+
     fun updateUserInputNewArtTitle(newArtTitle: String) {
         userInputNewArtTitle = newArtTitle
     }
@@ -124,6 +126,10 @@ class MyArtSpaceAppViewModel(
         _uiState.update {
             it.copy(isArtPhotoAdded = false)
         }
+    }
+
+    fun updateArtId(artId: Long) {
+        currentArtId = artId
     }
 
     //saving current album art list to display in ArtCardScreen

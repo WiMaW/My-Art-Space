@@ -46,8 +46,8 @@ interface MyArtDao {
     @Update(onConflict = OnConflictStrategy.REPLACE)
     fun updateArt(art: Art)
 
-    @Delete
-    fun deleteArt(art: Art)
+    @Query("DELETE FROM art WHERE art_id = :artId")
+    fun deleteArt(artId: Long)
 
     @Relation(entityColumn = "albumId", parentColumn = "id")
     @Transaction

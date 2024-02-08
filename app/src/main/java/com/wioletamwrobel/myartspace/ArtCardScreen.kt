@@ -28,7 +28,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.sharp.Home
 import androidx.compose.material.icons.sharp.Menu
-import androidx.compose.material.icons.twotone.List
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -46,14 +45,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Alignment.Companion.End
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
@@ -85,13 +80,14 @@ fun ArtCardScreen(
                 viewModel = viewModel,
             )
         }
-
         else -> {
             ArtCardScreenWithArts(
                 viewModel = viewModel,
                 artListSizeFromCurrentAlbum = artListSizeFromCurrentAlbum,
                 onClickHomeButton = { navController.navigate("home_screen") },
-                uiState = uiState
+                uiState = uiState,
+                myArtDao = myArtDao,
+                navController = navController
             )
         }
     }
@@ -103,7 +99,6 @@ fun ArtCardScreen(
             albumId = albumId,
             navController = navController
         )
-
     }
 }
 
@@ -145,10 +140,9 @@ fun ArtCardScreenWithArts(
     uiState: State<MyArtSpaceUiState>,
     artListSizeFromCurrentAlbum: Int,
     onClickHomeButton: () -> Unit,
+    myArtDao: MyArtDao,
+    navController: NavController
 ) {
-    val clickLimit: Int by remember {
-        mutableIntStateOf(artListSizeFromCurrentAlbum)
-    }
 
     Scaffold(
         floatingActionButton = {
@@ -172,11 +166,13 @@ fun ArtCardScreenWithArts(
                 )
         ) {
             ArtAndDescriptionCard(
-                clickLimit = clickLimit,
+                clickLimit = artListSizeFromCurrentAlbum,
                 artList = viewModel.artListInCurrentAlbum.toMutableStateList(),
                 onClickHomeButton = onClickHomeButton,
                 viewModel = viewModel,
-                uiState = uiState
+                uiState = uiState,
+                myArtDao = myArtDao,
+                navController = navController
             )
         }
     }
@@ -360,14 +356,18 @@ fun ArtAndDescriptionCard(
     clickLimit: Int,
     onClickHomeButton: () -> Unit,
     viewModel: MyArtSpaceAppViewModel,
-    uiState: State<MyArtSpaceUiState>
+    uiState: State<MyArtSpaceUiState>,
+    myArtDao: MyArtDao,
+    navController: NavController
 ) {
 
-    val pagerState = rememberPagerState() {
+    val pagerState = rememberPagerState {
         clickLimit
     }
 
     val scope = rememberCoroutineScope()
+
+    viewModel.updateArtId(artList[pagerState.currentPage].artId)
 
     Card(
         modifier = modifier
@@ -388,7 +388,11 @@ fun ArtAndDescriptionCard(
                 Column {
                     MenuButton(viewModel = viewModel)
                     if (uiState.value.isDropDownMenuVisible) {
-                        dropDownMenu(viewModel = viewModel)
+                        DropDownMenu(
+                            viewModel = viewModel,
+                            myArtDao = myArtDao,
+                            navController = navController
+                        )
                     }
                 }
             }
@@ -451,6 +455,7 @@ fun ArtAndDescriptionCard(
                 onClick = {
                     scope.launch {
                         pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                        viewModel.updateArtId(artList[pagerState.currentPage].artId)
                     }
                 },
             ) {
@@ -463,6 +468,7 @@ fun ArtAndDescriptionCard(
                 onClick = {
                     scope.launch {
                         pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                        viewModel.updateArtId(artList[pagerState.currentPage].artId)
                     }
                 },
             ) {
@@ -476,25 +482,10 @@ fun ArtAndDescriptionCard(
 }
 
 @Composable
-fun ChangeViewButton(
-    onClick: () -> Unit,
-) {
-    IconButton(
-        onClick = onClick
-    ) {
-        Icon(
-            imageVector = Icons.TwoTone.List,
-            contentDescription = stringResource(id = R.string.change_view_button),
-            tint = MaterialTheme.colorScheme.secondary
-        )
-    }
-}
-
-@Composable
 fun MenuButton(
     viewModel: MyArtSpaceAppViewModel
 ) {
-    IconButton(onClick = { viewModel.openDropDownMenu()}) {
+    IconButton(onClick = { viewModel.openDropDownMenu() }) {
         Icon(
             imageVector = Icons.Sharp.Menu,
             contentDescription = "Art Menu",
@@ -515,17 +506,35 @@ fun HomeButton(onClickHomeButton: () -> Unit) {
 }
 
 @Composable
-fun dropDownMenu(
-    viewModel: MyArtSpaceAppViewModel
+fun DropDownMenu(
+    viewModel: MyArtSpaceAppViewModel,
+    myArtDao: MyArtDao,
+    navController: NavController
 ) {
-    var isMenuVisible by rememberSaveable {
-        mutableStateOf(false)
-    }
+
+    val scope = rememberCoroutineScope()
 
     DropdownMenu(expanded = true, onDismissRequest = { viewModel.closeDropDownMenu() }) {
         DropdownMenuItem(
             text = { Text(text = "Delete Art") },
-            onClick = { /*TODO*/ })
+            onClick = {
+                Dispatchers.IO.dispatch(scope.coroutineContext) {
+                    myArtDao.deleteArt(viewModel.currentArtId)
+                    viewModel.updateCurrentAlbumArtListToDisplay(
+                        myArtDao.getAllArtsFromCurrentAlbum(
+                            viewModel.currentAlbumId
+                        )
+                    )
+                    viewModel.updateArtAmountInCurrentAlbum(
+                        myArtDao.getAllArtsFromCurrentAlbum(
+                            viewModel.currentAlbumId
+                        ).size
+                    )
+                }
+                navController.navigate("art_card_screen")
+                viewModel.closeDropDownMenu()
+            })
         DropdownMenuItem(text = { Text(text = "Edit Art") }, onClick = { /*TODO*/ })
+        DropdownMenuItem(text = { Text(text = "Share") }, onClick = { /*TODO*/ })
     }
 }
