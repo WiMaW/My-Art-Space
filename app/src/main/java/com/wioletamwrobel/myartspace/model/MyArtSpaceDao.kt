@@ -24,8 +24,8 @@ interface MyArtSpaceDao {
     @Update(onConflict = OnConflictStrategy.REPLACE)
     fun updateAlbum(album: Album)
 
-    @Delete
-    fun deleteAlbum(album: Album)
+    @Query("DELETE FROM album WHERE id = :albumId")
+    fun deleteAlbum(albumId: Long)
 
     @Query("DELETE FROM art WHERE albumId = :albumId")
     fun deleteAllArtFromAlbum(albumId: Long)

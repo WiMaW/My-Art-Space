@@ -1,5 +1,6 @@
 package com.wioletamwrobel.myartspace
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -40,11 +41,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.toMutableStateList
@@ -62,6 +65,7 @@ import coil.compose.AsyncImage
 import com.wioletamwrobel.myartspace.model.Art
 import com.wioletamwrobel.myartspace.model.MyArtDao
 import com.wioletamwrobel.myartspace.ui.theme.md_theme_light_primary
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -78,8 +82,10 @@ fun ArtCardScreen(
         0 -> {
             ArtCardScreenAppWithoutArts(
                 viewModel = viewModel,
+                onClickHomeButton = { navController.navigate("home_screen") }
             )
         }
+
         else -> {
             ArtCardScreenWithArts(
                 viewModel = viewModel,
@@ -91,7 +97,7 @@ fun ArtCardScreen(
             )
         }
     }
-    if (uiState.value.isAddArtButtonClicked) {
+    if (uiState.value.isAddArtButtonClicked || uiState.value.isEditArtClicked) {
         AddArtAlertDialog(
             uiState = uiState,
             viewModel = viewModel,
@@ -105,6 +111,7 @@ fun ArtCardScreen(
 @Composable
 fun ArtCardScreenAppWithoutArts(
     viewModel: MyArtSpaceAppViewModel,
+    onClickHomeButton: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -129,6 +136,7 @@ fun ArtCardScreenAppWithoutArts(
                 Text(text = stringResource(R.string.add_art_title))
             }
         }
+        HomeButton(onClickHomeButton = onClickHomeButton)
     }
 }
 
@@ -143,8 +151,13 @@ fun ArtCardScreenWithArts(
     myArtDao: MyArtDao,
     navController: NavController
 ) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     Scaffold(
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        },
         floatingActionButton = {
             AddArtFloatingActionButton(viewModel = viewModel)
         },
@@ -163,17 +176,39 @@ fun ArtCardScreenWithArts(
                 .fillMaxSize()
                 .verticalScroll(
                     rememberScrollState()
-                )
+                ),
         ) {
             ArtAndDescriptionCard(
                 clickLimit = artListSizeFromCurrentAlbum,
                 artList = viewModel.artListInCurrentAlbum.toMutableStateList(),
                 onClickHomeButton = onClickHomeButton,
-                viewModel = viewModel,
-                uiState = uiState,
-                myArtDao = myArtDao,
-                navController = navController
+                viewModel = viewModel
             )
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(
+                        top = dimensionResource(id = R.dimen.padding_large),
+                        end = dimensionResource(
+                            id = R.dimen.padding_small
+                        )
+                    )
+            ) {
+                if (uiState.value.isDropDownMenuVisible) {
+                    DropDownMenu(
+                        viewModel = viewModel
+                    )
+                }
+            }
+            if (uiState.value.isDeleteArtIconButtonClicked) {
+                SnackbarBeforeDeletingArt(
+                    scope = scope,
+                    snackbarHostState = snackbarHostState,
+                    viewModel = viewModel,
+                    navController = navController,
+                    myArtDao = myArtDao
+                )
+            }
         }
     }
 }
@@ -222,7 +257,9 @@ fun AddArtAlertDialog(
                 contentDescription = "add photo"
             )
         },
-        title = stringResource(R.string.add_art_title),
+        title = if (uiState.value.isEditArtClicked) stringResource(R.string.edit_art_title) else stringResource(
+            R.string.add_art_title
+        ),
         dialogText = {
             AddArtDialogText(
                 artTitle = viewModel.userInputNewArtTitle,
@@ -243,31 +280,62 @@ fun AddArtAlertDialog(
             navController.navigate("art_card_screen")
             viewModel.navigateToArtCardScreenFromAlertDialog()
             viewModel.clearUserInputNewArtFields()
+            if (uiState.value.isEditArtClicked) {
+                viewModel.closeEditArtAlertDialog()
+                viewModel.closeDropDownMenu()
+            }
         },
         onConfirmButtonClicked = {
-            val art = Art(
-                title = viewModel.userInputNewArtTitle,
-                method = viewModel.userInputNewArtMethod,
-                date = viewModel.userInputNewArtDate,
-                image = viewModel.userInputNewArtImage,
-                albumId = albumId,
-            )
-            Dispatchers.IO.dispatch(scope.coroutineContext) {
-                myArtDao.createArt(art)
-                viewModel.updateArtAmountInCurrentAlbum(
-                    myArtDao.getAllArtsFromCurrentAlbum(
-                        albumId
-                    ).size
-                )
-                viewModel.updateCurrentAlbumArtListToDisplay(
-                    myArtDao.getAllArtsFromCurrentAlbum(
-                        albumId
+            val art =
+                if (uiState.value.isEditArtClicked) {
+                    Art(
+                        artId = viewModel.currentArtId,
+                        title = viewModel.userInputNewArtTitle,
+                        method = viewModel.userInputNewArtMethod,
+                        date = viewModel.userInputNewArtDate,
+                        image = viewModel.userInputNewArtImage,
+                        albumId = albumId
                     )
-                )
+                } else {
+                    Art(
+                        title = viewModel.userInputNewArtTitle,
+                        method = viewModel.userInputNewArtMethod,
+                        date = viewModel.userInputNewArtDate,
+                        image = viewModel.userInputNewArtImage,
+                        albumId = albumId,
+                    )
+                }
+            if (uiState.value.isEditArtClicked) {
+                Dispatchers.IO.dispatch(scope.coroutineContext) {
+                    myArtDao.updateArt(art)
+                    viewModel.updateCurrentAlbumArtListToDisplay(
+                        myArtDao.getAllArtsFromCurrentAlbum(
+                            albumId
+                        )
+                    )
+                }
+                navController.navigate("art_card_screen")
+                viewModel.closeEditArtAlertDialog()
+                viewModel.clearUserInputNewArtFields()
+                viewModel.closeDropDownMenu()
+            } else {
+                Dispatchers.IO.dispatch(scope.coroutineContext) {
+                    myArtDao.createArt(art)
+                    viewModel.updateArtAmountInCurrentAlbum(
+                        myArtDao.getAllArtsFromCurrentAlbum(
+                            albumId
+                        ).size
+                    )
+                    viewModel.updateCurrentAlbumArtListToDisplay(
+                        myArtDao.getAllArtsFromCurrentAlbum(
+                            albumId
+                        )
+                    )
+                }
+                navController.navigate("art_card_screen")
+                viewModel.navigateToArtCardScreenFromAlertDialog()
+                viewModel.clearUserInputNewArtFields()
             }
-            navController.navigate("art_card_screen")
-            viewModel.navigateToArtCardScreenFromAlertDialog()
-            viewModel.clearUserInputNewArtFields()
         },
     )
 }
@@ -303,7 +371,6 @@ fun AddArtDialogText(
             onValueChange = onUserArtDateChanged
         )
         Row {
-
             Button(
                 onClick = onAddImageButtonClicked,
                 shape = MaterialTheme.shapes.small,
@@ -318,7 +385,6 @@ fun AddArtDialogText(
                 Text(text = if (!uiState.value.isArtPhotoAdded) "Add Art Image" else "Image added")
             }
         }
-
     }
 }
 
@@ -348,7 +414,7 @@ fun AppNameAndIcon(modifier: Modifier = Modifier) {
     )
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ArtAndDescriptionCard(
     modifier: Modifier = Modifier,
@@ -356,9 +422,6 @@ fun ArtAndDescriptionCard(
     clickLimit: Int,
     onClickHomeButton: () -> Unit,
     viewModel: MyArtSpaceAppViewModel,
-    uiState: State<MyArtSpaceUiState>,
-    myArtDao: MyArtDao,
-    navController: NavController
 ) {
 
     val pagerState = rememberPagerState {
@@ -366,7 +429,6 @@ fun ArtAndDescriptionCard(
     }
 
     val scope = rememberCoroutineScope()
-
     viewModel.updateArtId(artList[pagerState.currentPage].artId)
 
     Card(
@@ -387,13 +449,6 @@ fun ArtAndDescriptionCard(
                 Spacer(modifier = Modifier.weight(1f))
                 Column {
                     MenuButton(viewModel = viewModel)
-                    if (uiState.value.isDropDownMenuVisible) {
-                        DropDownMenu(
-                            viewModel = viewModel,
-                            myArtDao = myArtDao,
-                            navController = navController
-                        )
-                    }
                 }
             }
         }
@@ -508,16 +563,43 @@ fun HomeButton(onClickHomeButton: () -> Unit) {
 @Composable
 fun DropDownMenu(
     viewModel: MyArtSpaceAppViewModel,
-    myArtDao: MyArtDao,
-    navController: NavController
 ) {
-
-    val scope = rememberCoroutineScope()
-
-    DropdownMenu(expanded = true, onDismissRequest = { viewModel.closeDropDownMenu() }) {
+    DropdownMenu(
+        expanded = true,
+        onDismissRequest = { viewModel.closeDropDownMenu() },
+    ) {
         DropdownMenuItem(
             text = { Text(text = "Delete Art") },
             onClick = {
+                viewModel.openSnackbarBeforeDeletingArt()
+                viewModel.closeDropDownMenu()
+            })
+        DropdownMenuItem(
+            text = { Text(text = "Edit Art") },
+            onClick = { viewModel.openEditArtAlertDialog() })
+        DropdownMenuItem(text = { Text(text = "Share Art") }, onClick = { /*TODO*/ })
+    }
+}
+
+@SuppressLint("CoroutineCreationDuringComposition")
+@Composable
+fun SnackbarBeforeDeletingArt(
+    scope: CoroutineScope,
+    snackbarHostState: SnackbarHostState,
+    viewModel: MyArtSpaceAppViewModel,
+    navController: NavController,
+    myArtDao: MyArtDao,
+) {
+    scope.launch {
+        val result = snackbarHostState
+            .showSnackbar(
+                message = "Are you sure you want to delete this art?",
+                actionLabel = "YES",
+                withDismissAction = true,
+                duration = SnackbarDuration.Indefinite
+            )
+        when (result) {
+            SnackbarResult.ActionPerformed -> {
                 Dispatchers.IO.dispatch(scope.coroutineContext) {
                     myArtDao.deleteArt(viewModel.currentArtId)
                     viewModel.updateCurrentAlbumArtListToDisplay(
@@ -531,10 +613,13 @@ fun DropDownMenu(
                         ).size
                     )
                 }
+                viewModel.closeSnackbarBeforeDeletingArt()
                 navController.navigate("art_card_screen")
-                viewModel.closeDropDownMenu()
-            })
-        DropdownMenuItem(text = { Text(text = "Edit Art") }, onClick = { /*TODO*/ })
-        DropdownMenuItem(text = { Text(text = "Share") }, onClick = { /*TODO*/ })
+            }
+
+            SnackbarResult.Dismissed -> {
+                viewModel.closeSnackbarBeforeDeletingArt()
+            }
+        }
     }
 }

@@ -192,6 +192,36 @@ class MyArtSpaceAppViewModel(
             it.copy(isDropDownMenuVisible = false)
         }
     }
+    fun openEditArtAlertDialog() {
+        _uiState.update {
+            it.copy(isEditArtClicked = true)
+        }
+    }
+    fun closeEditArtAlertDialog() {
+        _uiState.update {
+            it.copy(isEditArtClicked = false)
+        }
+    }
+    fun openSnackbarBeforeDeletingAlbum() {
+        _uiState.update {
+            it.copy(isDeleteAlbumIconButtonClicked = true)
+        }
+    }
+    fun closeSnackbarBeforeDeletingAlbum() {
+        _uiState.update {
+            it.copy(isDeleteAlbumIconButtonClicked  = false)
+        }
+    }
+    fun openSnackbarBeforeDeletingArt() {
+        _uiState.update {
+            it.copy(isDeleteArtIconButtonClicked = true)
+        }
+    }
+    fun closeSnackbarBeforeDeletingArt() {
+        _uiState.update {
+            it.copy(isDeleteArtIconButtonClicked  = false)
+        }
+    }
 }
 
 data class MyArtSpaceUiState(
@@ -202,6 +232,9 @@ data class MyArtSpaceUiState(
     val isAddArtButtonClicked: Boolean = false,
     val isEditAlbumButtonClicked: Boolean = false,
     val isDropDownMenuVisible: Boolean = false,
+    val isEditArtClicked: Boolean = false,
+    val isDeleteAlbumIconButtonClicked: Boolean = false,
+    val isDeleteArtIconButtonClicked: Boolean = false,
     val navigationBarItemClicked: Int = 0,
 )
 

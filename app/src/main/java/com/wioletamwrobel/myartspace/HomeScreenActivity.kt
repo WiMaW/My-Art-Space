@@ -1,5 +1,6 @@
 package com.wioletamwrobel.myartspace
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -35,10 +36,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -54,6 +61,8 @@ import coil.compose.AsyncImage
 import com.wioletamwrobel.myartspace.model.Album
 import com.wioletamwrobel.myartspace.model.MyArtDao
 import com.wioletamwrobel.myartspace.model.MyArtSpaceDao
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import kotlin.concurrent.thread
 
 
@@ -84,6 +93,9 @@ fun HomeScreen(
     albumList: List<Album>,
     navController: NavController
 ) {
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+
     Scaffold(
         topBar = { AppNameAndIcon() },
         bottomBar = {
@@ -103,6 +115,9 @@ fun HomeScreen(
                 contentDescriptionItemFour = stringResource(R.string.settings),
             )
         },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        },
         modifier = Modifier
             .padding(top = dimensionResource(R.dimen.padding_medium))
             .fillMaxSize()
@@ -114,6 +129,9 @@ fun HomeScreen(
                 viewModel = viewModel,
                 myArtDao = myArtDao,
                 myArtSpaceDao = myArtSpaceDao,
+                uiState = uiState,
+                scope = scope,
+                snackbarHostState = snackbarHostState
             )
         }
     }
@@ -191,22 +209,22 @@ fun BottomNavigationBar(
                 )
             }
         )
-        NavigationBarItem(
-            selected = true,
-            onClick = { viewModel.navigateToBarItemDialog(4) },
-            label = {
-                Text(
-                    text = textItemFour,
-                    style = MaterialTheme.typography.labelSmall
-                )
-            },
-            icon = {
-                Icon(
-                    imageVector = iconItemFour,
-                    contentDescription = contentDescriptionItemFour
-                )
-            }
-        )
+//        NavigationBarItem(
+//            selected = true,
+//            onClick = { viewModel.navigateToBarItemDialog(4) },
+//            label = {
+//                Text(
+//                    text = textItemFour,
+//                    style = MaterialTheme.typography.labelSmall
+//                )
+//            },
+//            icon = {
+//                Icon(
+//                    imageVector = iconItemFour,
+//                    contentDescription = contentDescriptionItemFour
+//                )
+//            }
+//        )
     }
 }
 
@@ -233,7 +251,7 @@ fun CreateDialogsForNavigationBarItems(
     when (navigationBarItemNumber) {
         1 -> Dialog.CreateDialog(
             icon = { Icon(Icons.Filled.AddCircle, contentDescription = null) },
-            title = if(uiState.value.isEditAlbumButtonClicked)
+            title = if (uiState.value.isEditAlbumButtonClicked)
                 stringResource(id = R.string.edit_album) else stringResource(id = R.string.add_album),
             dialogText = {
                 AddAlbumDialogText(
@@ -261,7 +279,7 @@ fun CreateDialogsForNavigationBarItems(
             },
             onConfirmButtonClicked = {
                 val album =
-                    if(uiState.value.isEditAlbumButtonClicked) {
+                    if (uiState.value.isEditAlbumButtonClicked) {
                         Album(
                             id = viewModel.currentAlbumId,
                             title = viewModel.userInputNewAlbumTitle,
@@ -277,7 +295,7 @@ fun CreateDialogsForNavigationBarItems(
                             createDate = viewModel.userInputNewAlbumCreationDate,
                         )
                     }
-                if(uiState.value.isEditAlbumButtonClicked) {
+                if (uiState.value.isEditAlbumButtonClicked) {
                     thread {
                         myArtSpaceDao.updateAlbum(album)
                         viewModel.updateAlbumListToDisplay(myArtSpaceDao.getAllAlbums())
@@ -311,12 +329,12 @@ fun CreateDialogsForNavigationBarItems(
             onConfirmButtonClicked = { /*TODO*/ },
             onDismissButtonClicked = { viewModel.navigateToHomeScreenFromDialog() })
 
-        4 -> Dialog.CreateDialog(
-            icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
-            title = stringResource(id = R.string.settings),
-            dialogText = { SettingsDialogText() },
-            onConfirmButtonClicked = { /*TODO*/ },
-            onDismissButtonClicked = { viewModel.navigateToHomeScreenFromDialog() })
+//        4 -> Dialog.CreateDialog(
+//            icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
+//            title = stringResource(id = R.string.settings),
+//            dialogText = { SettingsDialogText() },
+//            onConfirmButtonClicked = { /*TODO*/ },
+//            onDismissButtonClicked = { viewModel.navigateToHomeScreenFromDialog() })
 
         else -> {}
     }
@@ -416,6 +434,9 @@ fun AlbumsLazyColumn(
     viewModel: MyArtSpaceAppViewModel,
     myArtDao: MyArtDao,
     myArtSpaceDao: MyArtSpaceDao,
+    uiState: State<MyArtSpaceUiState>,
+    scope: CoroutineScope,
+    snackbarHostState: SnackbarHostState,
 ) {
 
     val color = MaterialTheme.colorScheme.outlineVariant
@@ -500,12 +521,17 @@ fun AlbumsLazyColumn(
                         )
                         DeleteButton(
                             onDeleteButtonClicked = {
-                                thread {
-                                    myArtSpaceDao.deleteAlbum(album)
-                                    myArtSpaceDao.deleteAllArtFromAlbum(album.id)
-                                    viewModel.updateAlbumListToDisplay(myArtSpaceDao.getAllAlbums())
-                                }
-                            }
+                                viewModel.openSnackbarBeforeDeletingAlbum()
+                                viewModel.updateAlbumId(album.id)
+                            })
+                    }
+                    if (uiState.value.isDeleteAlbumIconButtonClicked) {
+                        SnackbarBeforeDeletingAlbum(
+                            scope = scope,
+                            snackbarHostState = snackbarHostState,
+                            viewModel = viewModel,
+                            navController = navController,
+                            myArtSpaceDao = myArtSpaceDao,
                         )
                     }
                 }
@@ -533,6 +559,41 @@ fun DeleteButton(onDeleteButtonClicked: () -> Unit) {
             contentDescription = "Edit Album",
             modifier = Modifier.size(18.dp)
         )
+    }
+}
+
+@SuppressLint("CoroutineCreationDuringComposition")
+@Composable
+fun SnackbarBeforeDeletingAlbum(
+    scope: CoroutineScope,
+    snackbarHostState: SnackbarHostState,
+    viewModel: MyArtSpaceAppViewModel,
+    navController: NavController,
+    myArtSpaceDao: MyArtSpaceDao,
+) {
+    scope.launch {
+        val result = snackbarHostState
+            .showSnackbar(
+                message = "Are you sure you want to delete this album?",
+                actionLabel = "YES",
+                withDismissAction = true,
+                duration = SnackbarDuration.Indefinite
+            )
+        when (result) {
+            SnackbarResult.ActionPerformed -> {
+                    thread {
+                        myArtSpaceDao.deleteAlbum(viewModel.currentAlbumId)
+                        myArtSpaceDao.deleteAllArtFromAlbum(viewModel.currentAlbumId)
+                        viewModel.updateAlbumListToDisplay(myArtSpaceDao.getAllAlbums())
+                    }
+                viewModel.closeSnackbarBeforeDeletingAlbum()
+                navController.navigate("home_screen")
+            }
+
+            SnackbarResult.Dismissed -> {
+                viewModel.closeSnackbarBeforeDeletingAlbum()
+            }
+        }
     }
 }
 

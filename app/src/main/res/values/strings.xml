@@ -38,5 +38,6 @@
     <string name="add_art">Add Art</string>
     <string name="add_art_title">Add piece of art</string>
     <string name="edit_album">Edit Album</string>
+    <string name="edit_art_title">Edit Art</string>
 
 </resources>
