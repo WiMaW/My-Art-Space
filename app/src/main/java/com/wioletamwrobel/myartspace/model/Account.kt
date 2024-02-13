@@ -10,9 +10,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.room.ColumnInfo
+import androidx.room.PrimaryKey
 
-object Account {
-   // @DrawableRes val accountAvatar: Int = R.drawable.avatar
-    val accountLogin: String = "Mimi"
-}
+data class Account (
+    @ColumnInfo(name = "user_id")@PrimaryKey(autoGenerate = true) val userId: Long = 0,
+    val mail: String = "",
+    val password: String = ""
+)
 

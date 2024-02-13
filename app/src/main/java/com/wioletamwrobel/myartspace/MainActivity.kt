@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.wioletamwrobel.myartspace.model.Album
 import com.wioletamwrobel.myartspace.model.MyArtDao
 import com.wioletamwrobel.myartspace.model.MyArtSpaceDao
 import com.wioletamwrobel.myartspace.model.MyArtSpaceDatabase
@@ -54,6 +55,7 @@ class MainActivity : ComponentActivity() {
     private val myArtDao: MyArtDao by lazy {
         database.getMyArtDao()
     }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

@@ -4,9 +4,7 @@ class MyArtSpaceDatabaseRepository(
     private val db: MyArtSpaceDatabase
 ) {
 
-    suspend fun getAllArtsFromCurrentAlbum(
-        albumId: Long
-    ): List<Art> {
-        return db.getMyArtDao().getAllArtsFromCurrentAlbum(albumId)
+    suspend fun getAllAlbums(): List<Album> {
+        return db.getMyAlbumDao().getAllAlbums()
     }
 }

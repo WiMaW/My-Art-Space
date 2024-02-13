@@ -2,6 +2,7 @@ package com.wioletamwrobel.myartspace
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -60,6 +61,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat.startActivity
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.wioletamwrobel.myartspace.model.Art
@@ -68,6 +70,7 @@ import com.wioletamwrobel.myartspace.ui.theme.md_theme_light_primary
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+
 
 @Composable
 fun ArtCardScreen(
@@ -200,7 +203,7 @@ fun ArtCardScreenWithArts(
                     )
                 }
             }
-            if (uiState.value.isDeleteArtIconButtonClicked) {
+            if (uiState.value.isDeleteDropdownItemClicked) {
                 SnackbarBeforeDeletingArt(
                     scope = scope,
                     snackbarHostState = snackbarHostState,
@@ -208,6 +211,25 @@ fun ArtCardScreenWithArts(
                     navController = navController,
                     myArtDao = myArtDao
                 )
+            }
+            if (uiState.value.isShareDropDownItemClicked) {
+                Dispatchers.IO.dispatch(scope.coroutineContext) {
+                    viewModel.updateArtTitleToShare(myArtDao.sendArtTitle(viewModel.currentArtId))
+                    viewModel.updateArtImageToShare(myArtDao.sendArtImage(viewModel.currentArtId))
+                }
+                val context = LocalContext.current
+                val intent = Intent(Intent.ACTION_SENDTO).apply {
+                    data = Uri.parse("smsto:")  // Only SMS apps respond to this.
+                    val image = Uri.parse(viewModel.currentArtImageToShare)
+                    val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    context.contentResolver.takePersistableUriPermission(
+                        image,
+                        flag
+                    )
+                    putExtra("sms_body", "Checkout my art piece:")
+                    putExtra(Intent.EXTRA_STREAM, image)
+                }
+                startActivity(context, intent, null)
             }
         }
     }
@@ -576,8 +598,16 @@ fun DropDownMenu(
             })
         DropdownMenuItem(
             text = { Text(text = "Edit Art") },
-            onClick = { viewModel.openEditArtAlertDialog() })
-        DropdownMenuItem(text = { Text(text = "Share Art") }, onClick = { /*TODO*/ })
+            onClick = {
+                viewModel.openEditArtAlertDialog()
+                viewModel.closeDropDownMenu()
+            })
+        DropdownMenuItem(
+            text = { Text(text = "Share Art (mms)") },
+            onClick = {
+                viewModel.sendEmailWithArt()
+                viewModel.closeDropDownMenu()
+            })
     }
 }
 
@@ -622,4 +652,16 @@ fun SnackbarBeforeDeletingArt(
             }
         }
     }
+}
+
+@Composable
+fun ShareIntent(message: String, attachment: Uri) {
+    val context = LocalContext.current
+
+    val intent = Intent(Intent.ACTION_SENDTO).apply {
+        data = Uri.parse("smsto:")
+        putExtra("sms_body", message)
+        putExtra(Intent.EXTRA_STREAM, attachment)
+    }
+    startActivity(context, intent, null)
 }

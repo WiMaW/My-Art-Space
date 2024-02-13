@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,12 +13,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
@@ -29,6 +33,7 @@ import androidx.compose.material.icons.sharp.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,6 +49,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -56,12 +64,16 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.wioletamwrobel.myartspace.model.Album
 import com.wioletamwrobel.myartspace.model.MyArtDao
 import com.wioletamwrobel.myartspace.model.MyArtSpaceDao
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlin.concurrent.thread
 
@@ -139,7 +151,9 @@ fun HomeScreen(
         navigationBarItemNumber = uiState.value.navigationBarItemClicked,
         viewModel = viewModel,
         myArtSpaceDao = myArtSpaceDao,
-        uiState = uiState
+        uiState = uiState,
+        myArtDao = myArtDao,
+        navController = navController
     )
 }
 
@@ -233,7 +247,9 @@ fun CreateDialogsForNavigationBarItems(
     navigationBarItemNumber: Int,
     viewModel: MyArtSpaceAppViewModel,
     uiState: State<MyArtSpaceUiState>,
-    myArtSpaceDao: MyArtSpaceDao
+    myArtSpaceDao: MyArtSpaceDao,
+    myArtDao: MyArtDao,
+    navController: NavController
 ) {
     val context = LocalContext.current
     val singlePhotoPickerLauncher = rememberLauncherForActivityResult(
@@ -318,7 +334,7 @@ fun CreateDialogsForNavigationBarItems(
         2 -> Dialog.CreateDialog(
             icon = { Icon(Icons.Filled.Search, contentDescription = null) },
             title = stringResource(id = R.string.search),
-            dialogText = { SearchDialogText() },
+            dialogText = { SearchDialogText(viewModel = viewModel, myArtDao = myArtDao, navController = navController) },
             onConfirmButtonClicked = { /*TODO*/ },
             onDismissButtonClicked = { viewModel.navigateToHomeScreenFromDialog() })
 
@@ -361,18 +377,52 @@ fun AccountDialogText() {
 }
 
 @Composable
-fun SearchDialogText() {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Dialog.DialogTextField(
-            value = "",
-            labelText = stringResource(R.string.search),
-            onValueChange = {}
-        )
-        TextButton(onClick = { /*TODO*/ }) {
-            Text(text = stringResource(id = R.string.search))
+fun SearchDialogText(
+    viewModel: MyArtSpaceAppViewModel,
+    myArtDao: MyArtDao,
+    navController: NavController
+) {
+    Column() {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            ) {
+            Dialog.DialogTextField(
+                value = viewModel.searchText,
+                labelText = stringResource(R.string.search),
+                onValueChange = viewModel::onSearchTextChange,
+            )
+        }
+        LazyColumn(modifier = Modifier.fillMaxWidth()) {
+            items(viewModel.albumListToDisplay) { album ->
+                if (album.doesMatchSearchQuery(viewModel.searchText.toString())) {
+                    Row(
+                        modifier = Modifier
+                            .padding(vertical = dimensionResource(id = R.dimen.padding_extra_small))
+                            .clickable {
+                                navController.navigate("art_card_screen")
+                                viewModel.updateAlbumId(album.id)
+                                thread {
+                                    viewModel.updateArtAmountInCurrentAlbum(
+                                        myArtDao.getAllArtsFromCurrentAlbum(
+                                            viewModel.currentAlbumId
+                                        ).size
+                                    )
+                                    viewModel.updateCurrentAlbumArtListToDisplay(
+                                        myArtDao.getAllArtsFromCurrentAlbum(
+                                            viewModel.currentAlbumId
+                                        )
+                                    )
+                                }
+                            }
+                    ) {
+                        Text(text = album.title)
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(text = album.createDate)
+                    }
+                    Divider(modifier = Modifier.height(1.dp))
+                }
+            }
         }
     }
 }
@@ -581,11 +631,11 @@ fun SnackbarBeforeDeletingAlbum(
             )
         when (result) {
             SnackbarResult.ActionPerformed -> {
-                    thread {
-                        myArtSpaceDao.deleteAlbum(viewModel.currentAlbumId)
-                        myArtSpaceDao.deleteAllArtFromAlbum(viewModel.currentAlbumId)
-                        viewModel.updateAlbumListToDisplay(myArtSpaceDao.getAllAlbums())
-                    }
+                thread {
+                    myArtSpaceDao.deleteAlbum(viewModel.currentAlbumId)
+                    myArtSpaceDao.deleteAllArtFromAlbum(viewModel.currentAlbumId)
+                    viewModel.updateAlbumListToDisplay(myArtSpaceDao.getAllAlbums())
+                }
                 viewModel.closeSnackbarBeforeDeletingAlbum()
                 navController.navigate("home_screen")
             }

@@ -1,7 +1,6 @@
 package com.wioletamwrobel.myartspace.model
 
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -23,6 +22,7 @@ interface MyArtSpaceDao {
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
     fun updateAlbum(album: Album)
+
 
     @Query("DELETE FROM album WHERE id = :albumId")
     fun deleteAlbum(albumId: Long)
@@ -48,6 +48,12 @@ interface MyArtDao {
 
     @Query("DELETE FROM art WHERE art_id = :artId")
     fun deleteArt(artId: Long)
+
+    @Query("SELECT title FROM art WHERE art_id = :artId")
+    fun sendArtTitle(artId: Long) : String
+
+    @Query("SELECT image FROM art WHERE art_id = :artId")
+    fun sendArtImage(artId: Long) : String
 
     @Relation(entityColumn = "albumId", parentColumn = "id")
     @Transaction

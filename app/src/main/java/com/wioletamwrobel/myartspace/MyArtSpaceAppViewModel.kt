@@ -99,6 +99,9 @@ class MyArtSpaceAppViewModel(
 
     var currentArtId: Long by mutableLongStateOf(0)
 
+    var currentArtTitleToShare: String by mutableStateOf("")
+    var currentArtImageToShare: String by mutableStateOf("")
+
     fun updateUserInputNewArtTitle(newArtTitle: String) {
         userInputNewArtTitle = newArtTitle
     }
@@ -132,6 +135,14 @@ class MyArtSpaceAppViewModel(
         currentArtId = artId
     }
 
+    fun updateArtTitleToShare(artTitle: String) {
+        currentArtTitleToShare = artTitle
+    }
+
+    fun updateArtImageToShare(artImage: String) {
+        currentArtImageToShare = artImage
+    }
+
     //saving current album art list to display in ArtCardScreen
     var artListInCurrentAlbum: List<Art> by mutableStateOf(emptyList())
 
@@ -143,6 +154,13 @@ class MyArtSpaceAppViewModel(
 
             }
         }
+    }
+
+    //Search
+    var searchText by mutableStateOf("")
+
+    fun onSearchTextChange(text: String) {
+        searchText = text
     }
 
     // navigation functions
@@ -187,41 +205,55 @@ class MyArtSpaceAppViewModel(
             it.copy(isDropDownMenuVisible = true)
         }
     }
+
     fun closeDropDownMenu() {
         _uiState.update {
             it.copy(isDropDownMenuVisible = false)
         }
     }
+
     fun openEditArtAlertDialog() {
         _uiState.update {
             it.copy(isEditArtClicked = true)
         }
     }
+
     fun closeEditArtAlertDialog() {
         _uiState.update {
             it.copy(isEditArtClicked = false)
         }
     }
+
     fun openSnackbarBeforeDeletingAlbum() {
         _uiState.update {
             it.copy(isDeleteAlbumIconButtonClicked = true)
         }
     }
+
     fun closeSnackbarBeforeDeletingAlbum() {
         _uiState.update {
-            it.copy(isDeleteAlbumIconButtonClicked  = false)
+            it.copy(isDeleteAlbumIconButtonClicked = false)
         }
     }
+
     fun openSnackbarBeforeDeletingArt() {
         _uiState.update {
-            it.copy(isDeleteArtIconButtonClicked = true)
+            it.copy(isDeleteDropdownItemClicked = true)
         }
     }
+
     fun closeSnackbarBeforeDeletingArt() {
         _uiState.update {
-            it.copy(isDeleteArtIconButtonClicked  = false)
+            it.copy(isDeleteDropdownItemClicked = false)
         }
     }
+
+    fun sendEmailWithArt() {
+        _uiState.update {
+            it.copy(isShareDropDownItemClicked = true)
+        }
+    }
+
 }
 
 data class MyArtSpaceUiState(
@@ -234,7 +266,8 @@ data class MyArtSpaceUiState(
     val isDropDownMenuVisible: Boolean = false,
     val isEditArtClicked: Boolean = false,
     val isDeleteAlbumIconButtonClicked: Boolean = false,
-    val isDeleteArtIconButtonClicked: Boolean = false,
+    val isDeleteDropdownItemClicked: Boolean = false,
+    val isShareDropDownItemClicked: Boolean = false,
     val navigationBarItemClicked: Int = 0,
 )
 
