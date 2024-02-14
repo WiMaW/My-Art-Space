@@ -163,6 +163,10 @@ class MyArtSpaceAppViewModel(
         searchText = text
     }
 
+    fun clearUserInputSearchField() {
+        searchText = ""
+    }
+
     // navigation functions
     fun navigateToBarItemDialog(barItemNumber: Int) {
         _uiState.update {

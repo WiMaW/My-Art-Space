@@ -5,7 +5,6 @@ import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,8 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
@@ -46,12 +43,8 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -64,16 +57,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewModelScope
+import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.wioletamwrobel.myartspace.model.Album
 import com.wioletamwrobel.myartspace.model.MyArtDao
 import com.wioletamwrobel.myartspace.model.MyArtSpaceDao
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlin.concurrent.thread
 
@@ -331,12 +321,13 @@ fun CreateDialogsForNavigationBarItems(
                 viewModel.clearUserInputNewAlbumFields()
             })
 
-        2 -> Dialog.CreateDialog(
-            icon = { Icon(Icons.Filled.Search, contentDescription = null) },
-            title = stringResource(id = R.string.search),
-            dialogText = { SearchDialogText(viewModel = viewModel, myArtDao = myArtDao, navController = navController) },
-            onConfirmButtonClicked = { /*TODO*/ },
-            onDismissButtonClicked = { viewModel.navigateToHomeScreenFromDialog() })
+        2 -> Dialog(onDismissRequest = { viewModel.navigateToHomeScreenFromDialog() }) {
+            SearchDialogText(
+                viewModel = viewModel,
+                myArtDao = myArtDao,
+                navController = navController
+            )
+        }
 
         3 -> Dialog.CreateDialog(
             icon = { Icon(Icons.Filled.AccountCircle, contentDescription = null) },
@@ -382,45 +373,54 @@ fun SearchDialogText(
     myArtDao: MyArtDao,
     navController: NavController
 ) {
-    Column() {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
+    Card(
+        modifier = Modifier
+            .padding(dimensionResource(R.dimen.padding_small))
+            .fillMaxSize(),
+        elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(R.dimen.padding_extra_small))
+    ) {
+        Column(modifier = Modifier.padding(dimensionResource(id = R.dimen.padding_medium))) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
             ) {
-            Dialog.DialogTextField(
-                value = viewModel.searchText,
-                labelText = stringResource(R.string.search),
-                onValueChange = viewModel::onSearchTextChange,
-            )
-        }
-        LazyColumn(modifier = Modifier.fillMaxWidth()) {
-            items(viewModel.albumListToDisplay) { album ->
-                if (album.doesMatchSearchQuery(viewModel.searchText.toString())) {
-                    Row(
-                        modifier = Modifier
-                            .padding(vertical = dimensionResource(id = R.dimen.padding_extra_small))
-                            .clickable {
-                                navController.navigate("art_card_screen")
-                                viewModel.updateAlbumId(album.id)
-                                thread {
-                                    viewModel.updateArtAmountInCurrentAlbum(
-                                        myArtDao.getAllArtsFromCurrentAlbum(
-                                            viewModel.currentAlbumId
-                                        ).size
-                                    )
-                                    viewModel.updateCurrentAlbumArtListToDisplay(
-                                        myArtDao.getAllArtsFromCurrentAlbum(
-                                            viewModel.currentAlbumId
+                Dialog.DialogTextField(
+                    value = viewModel.searchText,
+                    labelText = stringResource(R.string.search),
+                    onValueChange = viewModel::onSearchTextChange,
+                )
+            }
+            LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                items(viewModel.albumListToDisplay) { album ->
+                    if (album.doesMatchSearchQuery(viewModel.searchText.toString())) {
+                        Row(
+                            modifier = Modifier
+                                .padding(vertical = dimensionResource(id = R.dimen.padding_extra_small))
+                                .clickable {
+                                    viewModel.navigateToHomeScreenFromDialog()
+                                    navController.navigate("art_card_screen")
+                                    viewModel.updateAlbumId(album.id)
+                                    thread {
+                                        viewModel.updateArtAmountInCurrentAlbum(
+                                            myArtDao.getAllArtsFromCurrentAlbum(
+                                                viewModel.currentAlbumId
+                                            ).size
                                         )
-                                    )
+                                        viewModel.updateCurrentAlbumArtListToDisplay(
+                                            myArtDao.getAllArtsFromCurrentAlbum(
+                                                viewModel.currentAlbumId
+                                            )
+                                        )
+                                    }
+                                    viewModel.clearUserInputSearchField()
                                 }
-                            }
-                    ) {
-                        Text(text = album.title)
-                        Spacer(modifier = Modifier.weight(1f))
-                        Text(text = album.createDate)
+                        ) {
+                            Text(text = album.title)
+                            Spacer(modifier = Modifier.weight(1f))
+                            Text(text = album.createDate)
+                        }
+                        Divider(modifier = Modifier.height(1.dp))
                     }
-                    Divider(modifier = Modifier.height(1.dp))
                 }
             }
         }
