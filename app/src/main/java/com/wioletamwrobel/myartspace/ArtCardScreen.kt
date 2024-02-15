@@ -144,6 +144,7 @@ fun ArtCardScreenAppWithoutArts(
 }
 
 
+@SuppressLint("WrongConstant")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArtCardScreenWithArts(
@@ -218,18 +219,16 @@ fun ArtCardScreenWithArts(
                     viewModel.updateArtImageToShare(myArtDao.sendArtImage(viewModel.currentArtId))
                 }
                 val context = LocalContext.current
-                val intent = Intent(Intent.ACTION_SENDTO).apply {
-                    data = Uri.parse("smsto:")  // Only SMS apps respond to this.
-                    val image = Uri.parse(viewModel.currentArtImageToShare)
-                    val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    context.contentResolver.takePersistableUriPermission(
-                        image,
-                        flag
-                    )
-                    putExtra("sms_body", "Checkout my art piece:")
+                val image = Uri.parse(viewModel.currentArtImageToShare)
+                val sendIntent: Intent = Intent().apply {
+                    action = Intent.ACTION_SEND
+                    putExtra(Intent.EXTRA_TEXT, "Checkout my art piece.")
+                    type = "text/plain"
                     putExtra(Intent.EXTRA_STREAM, image)
+                    type = "image/jpeg"
                 }
-                startActivity(context, intent, null)
+                val shareIntent = Intent.createChooser(sendIntent, null)
+                startActivity(context, shareIntent, null)
             }
         }
     }
@@ -603,7 +602,7 @@ fun DropDownMenu(
                 viewModel.closeDropDownMenu()
             })
         DropdownMenuItem(
-            text = { Text(text = "Share Art (mms)") },
+            text = { Text(text = "Share Art") },
             onClick = {
                 viewModel.sendEmailWithArt()
                 viewModel.closeDropDownMenu()
