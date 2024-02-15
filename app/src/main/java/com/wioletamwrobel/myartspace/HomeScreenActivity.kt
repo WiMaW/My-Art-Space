@@ -387,7 +387,7 @@ fun SearchDialogText(
     Card(
         modifier = Modifier
             .padding(dimensionResource(R.dimen.padding_small))
-            .fillMaxSize(),
+            .height(400.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(R.dimen.padding_extra_small))
     ) {
         Column(modifier = Modifier.padding(dimensionResource(id = R.dimen.padding_medium))) {
@@ -406,7 +406,7 @@ fun SearchDialogText(
                     if (album.doesMatchSearchQuery(viewModel.searchText.toString())) {
                         Row(
                             modifier = Modifier
-                                .padding(vertical = dimensionResource(id = R.dimen.padding_extra_small))
+                                .padding(vertical = dimensionResource(id = R.dimen.padding_small))
                                 .clickable {
                                     viewModel.navigateToHomeScreenFromDialog()
                                     navController.navigate("art_card_screen")
