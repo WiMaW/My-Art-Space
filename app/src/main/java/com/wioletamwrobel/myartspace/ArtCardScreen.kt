@@ -70,6 +70,7 @@ import com.wioletamwrobel.myartspace.ui.theme.md_theme_light_primary
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlin.concurrent.thread
 
 
 @Composable
@@ -200,7 +201,8 @@ fun ArtCardScreenWithArts(
             ) {
                 if (uiState.value.isDropDownMenuVisible) {
                     DropDownMenu(
-                        viewModel = viewModel
+                        viewModel = viewModel,
+                        myArtDao = myArtDao
                     )
                 }
             }
@@ -312,10 +314,10 @@ fun AddArtAlertDialog(
                 if (uiState.value.isEditArtClicked) {
                     Art(
                         artId = viewModel.currentArtId,
-                        title = viewModel.userInputNewArtTitle,
-                        method = viewModel.userInputNewArtMethod,
-                        date = viewModel.userInputNewArtDate,
-                        image = viewModel.userInputNewArtImage,
+                        title = viewModel.userInputNewArtTitle.ifEmpty { viewModel.currentArtDetails.title },
+                        method = viewModel.userInputNewArtMethod.ifEmpty { viewModel.currentArtDetails.method },
+                        date = viewModel.userInputNewArtDate.ifEmpty { viewModel.currentArtDetails.date },
+                        image = viewModel.userInputNewArtImage.ifEmpty { viewModel.currentArtDetails.image },
                         albumId = albumId
                     )
                 } else {
@@ -585,6 +587,7 @@ fun HomeButton(onClickHomeButton: () -> Unit) {
 @Composable
 fun DropDownMenu(
     viewModel: MyArtSpaceAppViewModel,
+    myArtDao: MyArtDao
 ) {
     DropdownMenu(
         expanded = true,
@@ -599,6 +602,9 @@ fun DropDownMenu(
         DropdownMenuItem(
             text = { Text(text = "Edit Art") },
             onClick = {
+                thread {
+                    viewModel.updateCurrentArtDetails(myArtDao.getArtById(viewModel.currentArtId))
+                }
                 viewModel.openEditArtAlertDialog()
                 viewModel.closeDropDownMenu()
             })
@@ -652,16 +658,4 @@ fun SnackbarBeforeDeletingArt(
             }
         }
     }
-}
-
-@Composable
-fun ShareIntent(message: String, attachment: Uri) {
-    val context = LocalContext.current
-
-    val intent = Intent(Intent.ACTION_SENDTO).apply {
-        data = Uri.parse("smsto:")
-        putExtra("sms_body", message)
-        putExtra(Intent.EXTRA_STREAM, attachment)
-    }
-    startActivity(context, intent, null)
 }

@@ -144,7 +144,7 @@ class MyArtSpaceAppViewModel(
     var currentArtDetails: Art by mutableStateOf(Art())
 
     fun updateCurrentArtDetails(art: Art) {
-        currentAlbumDetails = art
+        currentArtDetails = art
     }
 
 

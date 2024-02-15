@@ -45,6 +45,9 @@ interface MyArtDao {
     @Update(onConflict = OnConflictStrategy.REPLACE)
     fun updateArt(art: Art)
 
+    @Query("SELECT * FROM art WHERE art_id= :artId")
+    fun getArtById(artId: Long): Art
+
     @Query("DELETE FROM art WHERE art_id = :artId")
     fun deleteArt(artId: Long)
 
