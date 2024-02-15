@@ -45,8 +45,11 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -288,10 +291,18 @@ fun CreateDialogsForNavigationBarItems(
                     if (uiState.value.isEditAlbumButtonClicked) {
                         Album(
                             id = viewModel.currentAlbumId,
-                            title = viewModel.userInputNewAlbumTitle,
-                            description = viewModel.userInputNewAlbumDescription,
-                            image = viewModel.userInputNewAlbumImage,
-                            createDate = viewModel.userInputNewAlbumCreationDate,
+                            title = viewModel.userInputNewAlbumTitle.ifEmpty {
+                                viewModel.currentAlbumDetails.title
+                            },
+                            description = viewModel.userInputNewAlbumDescription.ifEmpty {
+                                viewModel.currentAlbumDetails.description
+                            },
+                            image = viewModel.userInputNewAlbumImage.ifEmpty {
+                                viewModel.currentAlbumDetails.image
+                            },
+                            createDate = viewModel.userInputNewAlbumCreationDate.ifEmpty {
+                                viewModel.currentAlbumDetails.createDate
+                            },
                         )
                     } else {
                         Album(
@@ -567,6 +578,9 @@ fun AlbumsLazyColumn(
                                 viewModel.navigateToEditAlbumAlertDialog()
                                 viewModel.navigateToBarItemDialog(1)
                                 viewModel.updateAlbumId(album.id)
+                                thread {
+                                    viewModel.updateCurrentAlbumDetails(myArtSpaceDao.getAlbumById(viewModel.currentAlbumId))
+                                }
                             }
                         )
                         DeleteButton(

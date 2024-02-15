@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -78,6 +79,7 @@ class MyArtSpaceAppViewModel(
     //Sending album id between screens
     var currentAlbumId: Long by mutableLongStateOf(0)
     var artAmountInCurrentAlbum: Int by mutableIntStateOf(0)
+    var currentAlbumDetails: Album by mutableStateOf(Album())
 
 
     fun updateAlbumId(albumId: Long) {
@@ -86,6 +88,10 @@ class MyArtSpaceAppViewModel(
 
     fun updateArtAmountInCurrentAlbum(artListSize: Int) {
         artAmountInCurrentAlbum = artListSize
+    }
+
+    fun updateCurrentAlbumDetails(album: Album) {
+        currentAlbumDetails = album
     }
 
     //AlertDialog Add Art User Inputs
@@ -134,6 +140,13 @@ class MyArtSpaceAppViewModel(
     fun updateArtId(artId: Long) {
         currentArtId = artId
     }
+
+    var currentArtDetails: Art by mutableStateOf(Art())
+
+    fun updateCurrentArtDetails(art: Art) {
+        currentAlbumDetails = art
+    }
+
 
     fun updateArtTitleToShare(artTitle: String) {
         currentArtTitleToShare = artTitle
@@ -252,9 +265,15 @@ class MyArtSpaceAppViewModel(
         }
     }
 
-    fun sendEmailWithArt() {
+    fun sendArt() {
         _uiState.update {
             it.copy(isShareDropDownItemClicked = true)
+        }
+    }
+
+    fun stopSendArt() {
+        _uiState.update {
+            it.copy(isShareDropDownItemClicked = false)
         }
     }
 

@@ -229,6 +229,7 @@ fun ArtCardScreenWithArts(
                 }
                 val shareIntent = Intent.createChooser(sendIntent, null)
                 startActivity(context, shareIntent, null)
+                viewModel.stopSendArt()
             }
         }
     }
@@ -604,7 +605,7 @@ fun DropDownMenu(
         DropdownMenuItem(
             text = { Text(text = "Share Art") },
             onClick = {
-                viewModel.sendEmailWithArt()
+                viewModel.sendArt()
                 viewModel.closeDropDownMenu()
             })
     }
