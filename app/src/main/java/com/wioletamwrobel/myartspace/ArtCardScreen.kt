@@ -80,8 +80,9 @@ fun ArtCardScreen(
     uiState: State<MyArtSpaceUiState>,
     navController: NavController,
     myArtDao: MyArtDao,
-    artListSizeFromCurrentAlbum: Int,
 ) {
+    val scope = rememberCoroutineScope()
+
     when (viewModel.artListInCurrentAlbum.size) {
         0 -> {
             ArtCardScreenAppWithoutArts(
@@ -93,11 +94,12 @@ fun ArtCardScreen(
         else -> {
             ArtCardScreenWithArts(
                 viewModel = viewModel,
-                artListSizeFromCurrentAlbum = artListSizeFromCurrentAlbum,
+                //artListSizeFromCurrentAlbum = viewModel.artAmountInCurrentAlbum,
                 onClickHomeButton = { navController.navigate("home_screen") },
                 uiState = uiState,
                 myArtDao = myArtDao,
-                navController = navController
+                navController = navController,
+                scope = scope
             )
         }
     }
@@ -107,7 +109,8 @@ fun ArtCardScreen(
             viewModel = viewModel,
             myArtDao = myArtDao,
             albumId = albumId,
-            navController = navController
+            navController = navController,
+            scope = scope
         )
     }
 }
@@ -151,13 +154,12 @@ fun ArtCardScreenAppWithoutArts(
 fun ArtCardScreenWithArts(
     viewModel: MyArtSpaceAppViewModel,
     uiState: State<MyArtSpaceUiState>,
-    artListSizeFromCurrentAlbum: Int,
     onClickHomeButton: () -> Unit,
     myArtDao: MyArtDao,
-    navController: NavController
+    navController: NavController,
+    scope: CoroutineScope
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
 
     Scaffold(
         snackbarHost = {
@@ -184,10 +186,10 @@ fun ArtCardScreenWithArts(
                 ),
         ) {
             ArtAndDescriptionCard(
-                clickLimit = artListSizeFromCurrentAlbum,
                 artList = viewModel.artListInCurrentAlbum.toMutableStateList(),
                 onClickHomeButton = onClickHomeButton,
-                viewModel = viewModel
+                viewModel = viewModel,
+                scope = scope
             )
             Box(
                 modifier = Modifier
@@ -202,7 +204,8 @@ fun ArtCardScreenWithArts(
                 if (uiState.value.isDropDownMenuVisible) {
                     DropDownMenu(
                         viewModel = viewModel,
-                        myArtDao = myArtDao
+                        myArtDao = myArtDao,
+                        scope = scope
                     )
                 }
             }
@@ -260,9 +263,10 @@ fun AddArtAlertDialog(
     navController: NavController,
     viewModel: MyArtSpaceAppViewModel,
     albumId: Long,
-    myArtDao: MyArtDao
+    myArtDao: MyArtDao,
+    scope: CoroutineScope
 ) {
-    val scope = rememberCoroutineScope()
+
     val context = LocalContext.current
     val singlePhotoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -332,6 +336,11 @@ fun AddArtAlertDialog(
             if (uiState.value.isEditArtClicked) {
                 Dispatchers.IO.dispatch(scope.coroutineContext) {
                     myArtDao.updateArt(art)
+                    viewModel.updateArtAmountInCurrentAlbum(
+                        myArtDao.getAllArtsFromCurrentAlbum(
+                            albumId
+                        ).size
+                    )
                     viewModel.updateCurrentAlbumArtListToDisplay(
                         myArtDao.getAllArtsFromCurrentAlbum(
                             albumId
@@ -443,16 +452,15 @@ fun AppNameAndIcon(modifier: Modifier = Modifier) {
 fun ArtAndDescriptionCard(
     modifier: Modifier = Modifier,
     artList: MutableList<Art>,
-    clickLimit: Int,
     onClickHomeButton: () -> Unit,
     viewModel: MyArtSpaceAppViewModel,
+    scope: CoroutineScope
 ) {
 
     val pagerState = rememberPagerState {
-        clickLimit
+        viewModel.artAmountInCurrentAlbum
     }
 
-    val scope = rememberCoroutineScope()
     viewModel.updateArtId(artList[pagerState.currentPage].artId)
 
     Card(
@@ -587,7 +595,8 @@ fun HomeButton(onClickHomeButton: () -> Unit) {
 @Composable
 fun DropDownMenu(
     viewModel: MyArtSpaceAppViewModel,
-    myArtDao: MyArtDao
+    myArtDao: MyArtDao,
+    scope: CoroutineScope
 ) {
     DropdownMenu(
         expanded = true,
@@ -602,7 +611,7 @@ fun DropDownMenu(
         DropdownMenuItem(
             text = { Text(text = "Edit Art") },
             onClick = {
-                thread {
+                Dispatchers.IO.dispatch(scope.coroutineContext) {
                     viewModel.updateCurrentArtDetails(myArtDao.getArtById(viewModel.currentArtId))
                 }
                 viewModel.openEditArtAlertDialog()
@@ -638,21 +647,20 @@ fun SnackbarBeforeDeletingArt(
             SnackbarResult.ActionPerformed -> {
                 Dispatchers.IO.dispatch(scope.coroutineContext) {
                     myArtDao.deleteArt(viewModel.currentArtId)
-                    viewModel.updateCurrentAlbumArtListToDisplay(
-                        myArtDao.getAllArtsFromCurrentAlbum(
-                            viewModel.currentAlbumId
-                        )
-                    )
                     viewModel.updateArtAmountInCurrentAlbum(
                         myArtDao.getAllArtsFromCurrentAlbum(
                             viewModel.currentAlbumId
                         ).size
                     )
+                    viewModel.updateCurrentAlbumArtListToDisplay(
+                        myArtDao.getAllArtsFromCurrentAlbum(
+                            viewModel.currentAlbumId
+                        )
+                    )
                 }
                 viewModel.closeSnackbarBeforeDeletingArt()
                 navController.navigate("art_card_screen")
             }
-
             SnackbarResult.Dismissed -> {
                 viewModel.closeSnackbarBeforeDeletingArt()
             }

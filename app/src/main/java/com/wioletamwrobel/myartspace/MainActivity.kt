@@ -141,7 +141,6 @@ class MainActivity : ComponentActivity() {
                     uiState = uiState,
                     navController = navController,
                     myArtDao = myArtDao,
-                    artListSizeFromCurrentAlbum = viewModel.artAmountInCurrentAlbum
                 )
             }
         }

@@ -67,26 +67,9 @@ import com.wioletamwrobel.myartspace.model.Album
 import com.wioletamwrobel.myartspace.model.MyArtDao
 import com.wioletamwrobel.myartspace.model.MyArtSpaceDao
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.concurrent.thread
-
-
-//class HomeScreenActivity : ComponentActivity() {
-//    override fun onCreate(savedInstanceState: Bundle?) {
-//        super.onCreate(savedInstanceState)
-//        setContent {
-//            MyArtSpaceTheme {
-//                // A surface container using the 'background' color from the theme
-//                Surface(
-//                    modifier = Modifier.fillMaxSize(),
-//                    color = MaterialTheme.colorScheme.background
-//                ) {
-//                    HomeScreen()
-//                }
-//            }
-//        }
-//    }
-//}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -115,9 +98,9 @@ fun HomeScreen(
                 textItemThree = stringResource(R.string.account),
                 iconItemThree = Icons.Filled.AccountCircle,
                 contentDescriptionItemThree = stringResource(R.string.account),
-                textItemFour = stringResource(R.string.settings),
-                iconItemFour = Icons.Filled.Settings,
-                contentDescriptionItemFour = stringResource(R.string.settings),
+//                textItemFour = stringResource(R.string.settings),
+//                iconItemFour = Icons.Filled.Settings,
+//                contentDescriptionItemFour = stringResource(R.string.settings),
             )
         },
         snackbarHost = {
@@ -146,7 +129,8 @@ fun HomeScreen(
         myArtSpaceDao = myArtSpaceDao,
         uiState = uiState,
         myArtDao = myArtDao,
-        navController = navController
+        navController = navController,
+        scope = scope
     )
 }
 
@@ -162,9 +146,9 @@ fun BottomNavigationBar(
     textItemThree: String,
     iconItemThree: ImageVector,
     contentDescriptionItemThree: String,
-    textItemFour: String,
-    iconItemFour: ImageVector,
-    contentDescriptionItemFour: String,
+//    textItemFour: String,
+//    iconItemFour: ImageVector,
+//    contentDescriptionItemFour: String,
 
     ) {
     NavigationBar {
@@ -242,9 +226,11 @@ fun CreateDialogsForNavigationBarItems(
     uiState: State<MyArtSpaceUiState>,
     myArtSpaceDao: MyArtSpaceDao,
     myArtDao: MyArtDao,
-    navController: NavController
+    navController: NavController,
+    scope: CoroutineScope
 ) {
     val context = LocalContext.current
+
     val singlePhotoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
@@ -313,13 +299,13 @@ fun CreateDialogsForNavigationBarItems(
                         )
                     }
                 if (uiState.value.isEditAlbumButtonClicked) {
-                    thread {
+                    Dispatchers.IO.dispatch(scope.coroutineContext) {
                         myArtSpaceDao.updateAlbum(album)
                         viewModel.updateAlbumListToDisplay(myArtSpaceDao.getAllAlbums())
                     }
                     viewModel.navigateToHomeScreenFromEditAlbumAlertDialog()
                 } else {
-                    thread {
+                    Dispatchers.IO.dispatch(scope.coroutineContext) {
                         myArtSpaceDao.createAlbum(album)
                         viewModel.updateAlbumListToDisplay(myArtSpaceDao.getAllAlbums())
                     }
@@ -336,7 +322,8 @@ fun CreateDialogsForNavigationBarItems(
             SearchDialogText(
                 viewModel = viewModel,
                 myArtDao = myArtDao,
-                navController = navController
+                navController = navController,
+                scope = scope
             )
         }
 
@@ -358,15 +345,15 @@ fun CreateDialogsForNavigationBarItems(
     }
 }
 
-@Composable
-fun SettingsDialogText() {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-
-    }
-}
+//@Composable
+//fun SettingsDialogText() {
+//    Column(
+//        horizontalAlignment = Alignment.CenterHorizontally,
+//        verticalArrangement = Arrangement.Center,
+//    ) {
+//
+//    }
+//}
 
 @Composable
 fun AccountDialogText() {
@@ -382,7 +369,8 @@ fun AccountDialogText() {
 fun SearchDialogText(
     viewModel: MyArtSpaceAppViewModel,
     myArtDao: MyArtDao,
-    navController: NavController
+    navController: NavController,
+    scope: CoroutineScope
 ) {
     Card(
         modifier = Modifier
@@ -411,7 +399,7 @@ fun SearchDialogText(
                                     viewModel.navigateToHomeScreenFromDialog()
                                     navController.navigate("art_card_screen")
                                     viewModel.updateAlbumId(album.id)
-                                    thread {
+                                    Dispatchers.IO.dispatch(scope.coroutineContext) {
                                         viewModel.updateArtAmountInCurrentAlbum(
                                             myArtDao.getAllArtsFromCurrentAlbum(
                                                 viewModel.currentAlbumId
@@ -513,7 +501,7 @@ fun AlbumsLazyColumn(
                     .clickable {
                         navController.navigate("art_card_screen")
                         viewModel.updateAlbumId(album.id)
-                        thread {
+                        Dispatchers.IO.dispatch(scope.coroutineContext) {
                             viewModel.updateArtAmountInCurrentAlbum(
                                 myArtDao.getAllArtsFromCurrentAlbum(
                                     viewModel.currentAlbumId
@@ -578,7 +566,7 @@ fun AlbumsLazyColumn(
                                 viewModel.navigateToEditAlbumAlertDialog()
                                 viewModel.navigateToBarItemDialog(1)
                                 viewModel.updateAlbumId(album.id)
-                                thread {
+                                Dispatchers.IO.dispatch(scope.coroutineContext) {
                                     viewModel.updateCurrentAlbumDetails(myArtSpaceDao.getAlbumById(viewModel.currentAlbumId))
                                 }
                             }
@@ -645,7 +633,7 @@ fun SnackbarBeforeDeletingAlbum(
             )
         when (result) {
             SnackbarResult.ActionPerformed -> {
-                thread {
+                Dispatchers.IO.dispatch(scope.coroutineContext) {
                     myArtSpaceDao.deleteAlbum(viewModel.currentAlbumId)
                     myArtSpaceDao.deleteAllArtFromAlbum(viewModel.currentAlbumId)
                     viewModel.updateAlbumListToDisplay(myArtSpaceDao.getAllAlbums())
