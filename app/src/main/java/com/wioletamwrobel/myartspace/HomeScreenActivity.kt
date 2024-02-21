@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
@@ -61,6 +62,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.compose.ui.window.Dialog
@@ -401,6 +403,7 @@ fun SearchDialogText(
                     value = viewModel.searchText,
                     labelText = stringResource(R.string.search),
                     onValueChange = viewModel::onSearchTextChange,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
                 )
             }
             LazyColumn(modifier = Modifier.fillMaxWidth()) {
@@ -440,6 +443,7 @@ fun SearchDialogText(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddAlbumDialogText(
     albumTitle: String,
@@ -458,18 +462,21 @@ fun AddAlbumDialogText(
         Dialog.DialogTextField(
             value = albumTitle,
             labelText = stringResource(R.string.add_album_title),
-            onValueChange = onUserAlbumTitleChanged
+            onValueChange = onUserAlbumTitleChanged,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
         )
         Dialog.DialogTextField(
             value = albumDescription,
             labelText = stringResource(R.string.add_album_description),
-            onValueChange = onUserAlbumDescriptionChanged
+            onValueChange = onUserAlbumDescriptionChanged,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
         )
-        Dialog.DialogTextField(
-            value = albumCreationDate,
-            labelText = stringResource(R.string.add_album_date),
-            onValueChange = onUserAlbumCreationDateChanged
-        )
+            Dialog.DialogTextField(
+                value = albumCreationDate,
+                labelText = stringResource(R.string.add_album_date),
+                onValueChange = onUserAlbumCreationDateChanged,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            )
         Row {
 
             Button(
@@ -486,7 +493,6 @@ fun AddAlbumDialogText(
                 Text(text = if (!uiState.value.isAlbumPhotoAdded) "Add Album Image" else "Image added")
             }
         }
-
     }
 }
 

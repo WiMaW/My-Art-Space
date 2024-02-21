@@ -26,8 +26,10 @@ import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.sharp.ArrowBack
 import androidx.compose.material.icons.sharp.Home
 import androidx.compose.material.icons.sharp.Menu
 import androidx.compose.material3.Button
@@ -60,6 +62,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.startActivity
 import androidx.navigation.NavController
@@ -127,6 +130,7 @@ fun ArtCardScreenAppWithoutArts(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        HomeButton(onClickHomeButton = onClickHomeButton)
         AppNameAndIcon()
         Row(modifier = Modifier.padding(top = dimensionResource(R.dimen.padding_medium))) {
             Button(
@@ -142,7 +146,6 @@ fun ArtCardScreenAppWithoutArts(
                 Text(text = stringResource(R.string.add_art_title))
             }
         }
-        HomeButton(onClickHomeButton = onClickHomeButton)
     }
 }
 
@@ -390,17 +393,20 @@ fun AddArtDialogText(
         Dialog.DialogTextField(
             value = artTitle,
             labelText = stringResource(R.string.add_album_title),
-            onValueChange = onUserArtTitleChanged
+            onValueChange = onUserArtTitleChanged,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
         )
         Dialog.DialogTextField(
             value = artMethod,
             labelText = stringResource(R.string.add_art_method),
-            onValueChange = onUserArtMethodChanged
+            onValueChange = onUserArtMethodChanged,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
         )
         Dialog.DialogTextField(
             value = artDate,
             labelText = stringResource(R.string.add_album_date),
-            onValueChange = onUserArtDateChanged
+            onValueChange = onUserArtDateChanged,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
         Row {
             Button(
@@ -575,7 +581,7 @@ fun MenuButton(
         Icon(
             imageVector = Icons.Sharp.Menu,
             contentDescription = "Art Menu",
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(24.dp)
         )
     }
 }
@@ -584,9 +590,9 @@ fun MenuButton(
 fun HomeButton(onClickHomeButton: () -> Unit) {
     IconButton(onClick = onClickHomeButton) {
         Icon(
-            imageVector = Icons.Sharp.Home,
+            imageVector = Icons.Sharp.ArrowBack,
             contentDescription = "Return to home",
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(24.dp)
         )
     }
 }

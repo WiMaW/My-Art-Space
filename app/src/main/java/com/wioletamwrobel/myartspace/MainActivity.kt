@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material3.Button
@@ -24,11 +25,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.wioletamwrobel.myartspace.model.Album
 import com.wioletamwrobel.myartspace.model.MyArtDao
 import com.wioletamwrobel.myartspace.model.MyArtSpaceDao
 import com.wioletamwrobel.myartspace.model.MyArtSpaceDatabase
@@ -194,12 +195,14 @@ class MainActivity : ComponentActivity() {
             Dialog.DialogTextField(
                 value = "",
                 labelText = stringResource(R.string.login),
-                onValueChange = {}
+                onValueChange = {},
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
             )
             Dialog.DialogTextField(
                 value = "",
                 labelText = stringResource(R.string.password),
-                onValueChange = {}
+                onValueChange = {},
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
             )
         }
     }
@@ -217,17 +220,20 @@ class MainActivity : ComponentActivity() {
             Dialog.DialogTextField(
                 value = "",
                 labelText = stringResource(R.string.login),
-                onValueChange = {}
+                onValueChange = {},
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
             )
             Dialog.DialogTextField(
                 value = "",
                 labelText = stringResource(R.string.e_mail),
-                onValueChange = {}
+                onValueChange = {},
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
             )
             Dialog.DialogTextField(
                 value = "",
                 labelText = stringResource(R.string.password),
-                onValueChange = {}
+                onValueChange = {},
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
             )
         }
     }

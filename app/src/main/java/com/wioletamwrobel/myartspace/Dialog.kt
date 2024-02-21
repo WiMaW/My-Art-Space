@@ -69,6 +69,7 @@ object Dialog {
         labelText: String,
         onValueChange: (String) -> Unit,
         isError: Boolean = false,
+        keyboardOptions: KeyboardOptions,
         modifier: Modifier = Modifier.padding(dimensionResource(R.dimen.padding_extra_small))
     ) {
         OutlinedTextField(
@@ -91,9 +92,7 @@ object Dialog {
                     )
                 }
             },
-            keyboardOptions = KeyboardOptions.Default.copy(
-                imeAction = ImeAction.Done
-            ),
+            keyboardOptions = keyboardOptions,
             keyboardActions = KeyboardActions(
                 onDone = { }
             ),
