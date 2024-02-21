@@ -39,11 +39,8 @@ import kotlin.concurrent.thread
 
 class MainActivity : ComponentActivity() {
 
-    //private lateinit var viewModel: MyArtSpaceAppViewModel
-
     val viewModel by viewModel<MyArtSpaceAppViewModel>()
     private lateinit var uiState: State<MyArtSpaceUiState>
-    //private lateinit var albumList: List<Album>
 
     private val database: MyArtSpaceDatabase by lazy {
         MyArtSpaceDatabase.getDatabase(this)
@@ -77,18 +74,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
-//    override fun onResume() {
-//        super.onResume()
-//        thread {
-//            albumList = myArtSpaceDao.getAllAlbums()
-//        }
-//    }
-
-//    @Composable
-//    fun CreateViewModel() {
-//
-//    }
 
     @SuppressLint("ComposableDestinationInComposeScope")
     @Composable

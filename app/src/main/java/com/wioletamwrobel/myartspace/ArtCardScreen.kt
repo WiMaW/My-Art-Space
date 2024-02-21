@@ -94,7 +94,6 @@ fun ArtCardScreen(
         else -> {
             ArtCardScreenWithArts(
                 viewModel = viewModel,
-                //artListSizeFromCurrentAlbum = viewModel.artAmountInCurrentAlbum,
                 onClickHomeButton = { navController.navigate("home_screen") },
                 uiState = uiState,
                 myArtDao = myArtDao,

@@ -5,6 +5,8 @@ import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,12 +21,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.sharp.Delete
 import androidx.compose.material.icons.sharp.Edit
 import androidx.compose.material3.Button
@@ -44,14 +47,13 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -60,6 +62,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.lerp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -68,8 +71,10 @@ import com.wioletamwrobel.myartspace.model.MyArtDao
 import com.wioletamwrobel.myartspace.model.MyArtSpaceDao
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.concurrent.thread
+import kotlinx.coroutines.yield
+import kotlin.math.absoluteValue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -111,16 +116,25 @@ fun HomeScreen(
             .fillMaxSize()
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
-            AlbumsLazyColumn(
-                albumList = albumList,
-                navController = navController,
-                viewModel = viewModel,
-                myArtDao = myArtDao,
-                myArtSpaceDao = myArtSpaceDao,
-                uiState = uiState,
-                scope = scope,
-                snackbarHostState = snackbarHostState
-            )
+            if (viewModel.albumListToDisplay.isEmpty()) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    ImageSlider()
+                }
+            } else {
+                AlbumsLazyColumn(
+                    albumList = albumList,
+                    navController = navController,
+                    viewModel = viewModel,
+                    myArtDao = myArtDao,
+                    myArtSpaceDao = myArtSpaceDao,
+                    uiState = uiState,
+                    scope = scope,
+                    snackbarHostState = snackbarHostState
+                )
+            }
         }
     }
     CreateDialogsForNavigationBarItems(
@@ -150,7 +164,7 @@ fun BottomNavigationBar(
 //    iconItemFour: ImageVector,
 //    contentDescriptionItemFour: String,
 
-    ) {
+) {
     NavigationBar {
         NavigationBarItem(
             selected = true,
@@ -567,7 +581,11 @@ fun AlbumsLazyColumn(
                                 viewModel.navigateToBarItemDialog(1)
                                 viewModel.updateAlbumId(album.id)
                                 Dispatchers.IO.dispatch(scope.coroutineContext) {
-                                    viewModel.updateCurrentAlbumDetails(myArtSpaceDao.getAlbumById(viewModel.currentAlbumId))
+                                    viewModel.updateCurrentAlbumDetails(
+                                        myArtSpaceDao.getAlbumById(
+                                            viewModel.currentAlbumId
+                                        )
+                                    )
                                 }
                             }
                         )
@@ -645,6 +663,62 @@ fun SnackbarBeforeDeletingAlbum(
             SnackbarResult.Dismissed -> {
                 viewModel.closeSnackbarBeforeDeletingAlbum()
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun ImageSlider() {
+    val pagerState = rememberPagerState { 4 }
+    val imageSlider = listOf(
+        painterResource(id = R.drawable.alice_donovan_rouse_yu68fuqdvoi_unsplash),
+        painterResource(id = R.drawable.dan_farrell_ft49qnfucq8_unsplash),
+        painterResource(id = R.drawable.rhondak_native_florida_folk_artist__yc7otffn_0_unsplash),
+        painterResource(id = R.drawable.steve_johnson_3sf_g9m0gcq_unsplash)
+    )
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            yield()
+            delay(3000)
+            pagerState.animateScrollToPage(
+                page = (pagerState.currentPage + 1) % (pagerState.pageCount)
+            )
+        }
+    }
+
+    HorizontalPager(
+        state = pagerState,
+        beyondBoundsPageCount = 1,
+        pageSpacing = 10.dp,
+        modifier = Modifier.padding(
+            horizontal = dimensionResource(
+                id = R.dimen.padding_medium
+            )
+        )
+    ) { page ->
+        Card(
+            Modifier
+                .fillMaxWidth()
+                .graphicsLayer {
+                    val pageOffset = (
+                            (pagerState.currentPage - page) + pagerState
+                                .currentPageOffsetFraction
+                            ).absoluteValue
+                    alpha = lerp(
+                        start = 0.5f,
+                        stop = 1f,
+                        fraction = 1f - pageOffset.coerceIn(0f, 1f)
+                    )
+                }
+        ) {
+            Image(
+                painter = imageSlider[page],
+                contentDescription = "image slider",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.height(350.dp)
+            )
         }
     }
 }
