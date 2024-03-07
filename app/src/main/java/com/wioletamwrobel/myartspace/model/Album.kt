@@ -7,15 +7,13 @@ import androidx.room.PrimaryKey
 import androidx.room.Relation
 
 @Entity(tableName = "album")
-class Album (id: Long = 0, title: String = "", description: String = "", image:String = "", createDate: String = "" ) {
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = id
-    val title: String = title
-    val description: String = description
-    val image: String = image
-    @ColumnInfo(name = "create_date")
-    val createDate: String = createDate
-    //@ColumnInfo(name = "art_number") val artNumber: Int = 0,
+class Album(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val title: String = "",
+    val description: String = "",
+    val image: String = "",
+    @ColumnInfo(name = "create_date") val createDate: String = ""
+) {
 
     fun doesMatchSearchQuery(query: String): Boolean {
         val matchingCombintions = listOf(
